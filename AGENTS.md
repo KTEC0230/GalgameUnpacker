@@ -21,23 +21,23 @@
 
 > **2026-11-02 测试反馈**：随包 GARbro 的 .NET 插件加载修复仅适用于可信工具目录；Unity 样本的音频收集未对账通过，KiriKiri 索引兜底已用真实注入新索引和模拟窗口缺失提取 2562 条，自然窗口缺失尚未复现。案例索引已保留旧案例并加入 Toshiue。实测和限制见 `verified-findings.md`。
 
-> **📌 当前状态（2026-11-07 21:2x，bugfix3 已构建并部署标准路径；GUI 真机启动已验证；只剩 40 分钟独占桌面实跑）**
+> **📌 当前状态（2026-11-08 03:0x，★krkr 链路真机闭环达成★：bugfix5 部署标准路径，`教师催眠2` 全自动 rc=0、三媒体零失败，数字与人工闭环一致）**
 > - **交付**：`packaging/Output/GalgameUnpacker-0.8.2-portable.zip`（148,528,606 B / 141.7 MiB，
 >   SHA256 `687f4cd3…f26de05e983d`），已发布到 GitHub Release **`v0.8.2`**
 >   <https://github.com/KTEC1200/game-get/releases/tag/v0.8.2>（仅 1 个附件，asset `717312891`）。
 >   **本轮不改 Release 附件、不动 `version.py` / README。**
-> - **✅ 当前本地包 bugfix3（用这个，已部署标准路径）**：
->   `packaging/Output/GalgameUnpacker-0.8.2-bugfix3-portable.zip`
->   （141.7 MiB，SHA256 `66045686…ca308b39e`），包内 `BUILD_INFO.txt`
->   标 `bugfix3` / 构建时间 21:11；README 125 行逐字相同、包内 exe 与 dist 同 SHA
->   （`fdd45581…56e0eaa`）、`testzip()` 无损坏（1514 项）；CArchiveReader 实证
->   `gui._make_root`（`2001f62` 的 tkinterdnd2 兜底）确实进包。
->   **标准路径 `D:\GalgameUnpacker\orchestrator`**（旧版本已清理，见下）。
->   部署自检：`--doctor` rc=0、`--gui-smoke` rc=0、冻结 exe 对 `教师催眠2` 只读
->   `--dry-run` rc=0（KiriKiri score=90、案例库命中）。
->   **GUI 真机启动已验证（18:4x，ShellExecute 拉起 + 进程/窗口/截图三重确认）**——
->   上午 18:06 两次双击闪退（tcl86t.dll `0x80000003`）是火绒卡死时段窗口站瘫痪的连带伤害，
->   重启后无新崩溃，不再追。
+> - **✅ 当前本地包 bugfix5（用这个，已部署标准路径）**：
+>   `packaging/Output/GalgameUnpacker-0.8.2-bugfix5-portable.zip`
+>   （141.7 MiB，SHA256 `12d472fe…4dfd9b`），BUILD_INFO 标 `bugfix5` / 提交 `c286fe6`；
+>   README 125 行逐字相同、exe 三处同 SHA、CArchiveReader 实证
+>   `krkr_auto_extract.NO_AUTO_DISMISS` 进包。
+>   **标准路径 `D:\GalgameUnpacker\orchestrator`**（旧包目录改名
+>   `orchestrator_prev_bugfix4` 保留）。
+>   部署自检 doctor/gui-smoke/dry-run 全 rc=0。本轮内容：krkr 死因修复
+>   （`NO_AUTO_DISMISS` 默认开）+ 收货布局修复（`_collect_krkr_output`）+
+>   `KRKR_STAGE_ROOT` env + dismiss 弹窗正文日志埋点。
+>   **GUI 真机启动已验证（11-07 18:4x）**；11-07 18:06 两次双击闪退
+>   （tcl86t.dll `0x80000003`）是火绒卡死时段窗口站瘫痪的连带伤害，重启后无新崩溃。
 > - **历史包**：已发布 0.8.2 / dropfix1 / bugfix1 三个 zip 均**未改动、未覆盖**，留作对照；
 >   `build_exe.py --tag` 对同名 zip 一律拒绝覆盖。
 > - **✅ 用户数据已恢复（00:40）**：`D:\HY\教师催眠2\output` 的 `raw/`(7070) 与 `png/`(2748)
@@ -65,11 +65,10 @@
 > 2. ~~交互桌面会话恢复后打 bugfix3~~ **✅ 2026-11-07 21:11 构建并部署**：
 >    zip SHA256 `66045686…08b39e`，校验/自检全过，标准路径已是 bugfix3。
 >    构建一次过，反证 17:55 两次失败纯属旧会话环境。
-> 3. **`--allow-gui` 全自动真机闭环**：约 40 分钟独占桌面（不切窗口、不动鼠标、不锁屏、
->    不用远程桌面）跑 `教师催眠2`；看新日志的「unpack mode: Full Unpack 已开启（…）」与
->    四分类落点统计。若仍失败，日志会带原始顶层窗口清单（hwnd/类名/标题）与 UIA 控件清单，
->    能直接定位，不用再猜。**rc=0 且三媒体零失败之前别声称闭环**。
->    ⚠️ 别对 `D:\HY\教师催眠2\output` 直接 `--overwrite`，先在副本上试或另指定输出目录。
+> 3. ~~`--allow-gui` 全自动真机闭环~~ **✅ 2026-11-08 03:0x 达成**：`教师催眠2` 全自动
+>    rc=0，raw 9821，图片 3082/3082、音频 6558/6558、视频 12/12 零失败，organize
+>    硬链接 9821 失败 0 —— 与 v0.7.1 人工闭环逐字一致。死因与修复见文末
+>    「2026-11-08 krkr 链路真机死因破案与闭环达成」。
 > 4. `Full Unpack` 是否对所有 KrkrExtract 版本/游戏都有效：目前只对 `教师催眠2` 验证过。
 > 5. 案例库仍只有 12 个 case；新变体照旧要从头逆向。
 > 6. `packaging\Output\orchestrator` 上那两条非标准 ACE（`Everyone …(DENY)(DC)`）来源未查明
@@ -80,6 +79,7 @@
 > **已完成（17:55）**：数据恢复、QA 收口、WinForms 根因修复、bugfix2 新包、
 > 标准路径切换、GUI 启动兜底源码修复、822 项回归。
 > **已完成（21:2x）**：GUI 真机启动验证、bugfix3 构建与标准路径部署、健康会话基线复测。
+> **已完成（11-08 03:0x）**：krkr 真机死因破案与修复、收货布局修复、闭环达成（bugfix5）。
 
 > **🚀 接手顺序（新会话只做这四步）**
 > ① 读上面「当前状态 / 待办」+ 文末「2026-11-07 真机实跑失败与 BugFix」「接手收口」+「⚠️ 五个坑」；
@@ -1953,3 +1953,85 @@ pytest 整个会话被打断。同会话里 `trash` 的 `CoInitializeEx` 也报
   **保留已发布的 `0.8.2-portable.zip` 与当前 `bugfix3-portable.zip`**。
 - 实测释放约 **17 GB**（374G→357G used，可用 79G→95G）。全程显式路径 rm -rf，
   未用通配符，未触碰当前包与用户数据。
+
+## 2026-11-08 krkr 链路真机死因破案与闭环达成（★主线收口★）
+
+### 1. 死因（四轮真机同一签名 → 弹窗正文一锤定音）
+
+11-07 15:07/15:22 + 11-07 21:5x + 11-08 22:1x（快测）四轮 `--allow-gui` 全在同一处死：
+注入成功 → 游戏弹 `Information` → dismiss 点掉 → **1 秒后该进程顶层窗口全空** →
+「没点上 Full Unpack」硬失败。给 `dismiss_dialogs` 加了弹窗正文日志后拿到铁证：
+
+```
+dialog[Information] body=['确定', '正常に起動できませんでした'] buttons=['确定']
+```
+
+**krkrZ 的「正常に起動できませんでした」是致命启动失败框：点掉 OK = 游戏进程退出 =
+注入式提取 UI 陪葬。** 11-06「关掉后 data.xp3 立刻 +57 文件」的旧结论是误判——
+抽文件发生在**弹窗挂着的时候**（引擎启动尝试中钩子就抽走了），关掉只是让观察解堵；
+那轮 UI 在 dismiss 后其实也死了，只是计数已经跳过 57 才发现的。
+
+### 2. 修复（两个默认值 + 一个 env）
+
+- **`NO_AUTO_DISMISS` 默认开**（`KRKR_NO_AUTO_DISMISS=0` 回退旧行为）：不自动点任何
+  `#32770` 提示框，**带着弹窗拖包**——完成判定 v0.7.0 起不再要求无对话框，
+  落点扫描天然绕开弹窗区域，弹窗在收尾杀进程时自然消失。
+- **`KRKR_STAGE_ROOT` env**：stage 默认跟代码/部署走；源码态跑 krkr 链路时指到
+  `D:\K` 之外（见第 3 条）。部署态默认路径本来就在树外，无需设置。
+- 排查中证伪并删掉的弯路：**standalone 模式（xp3 直拖 Lite 注入器）**——真机实证
+  注入器对 xp3 投递毫无反应（它只收 exe），相关代码已全部移除。
+- 排除法记录：火绒 5 项防护（恶意行为监控/内存防护/文件实时监控/风险软件监控/
+  自定义防护）关闭后照旧死 → **火绒不是死因**；stage 移出 D:\K 树后照旧死 →
+  **ACE/降权也不是主因**（但见第 3 条，stage 位置依然要管）。
+
+### 3. D:\K\deepseek 根上的神秘 ACE（§32 谜底推进）
+
+`icacls` 实测：`D:\K\deepseek` 根上有两条**非继承** ACE（§32 在
+packaging\Output\orchestrator 上发现的那两条的真身）：
+
+```
+Everyone:(CI)(DENY)(DC)
+S-1-4-466530695-238761456:(OI)(CI)(W,D,DC)
+```
+
+整棵树连坐（`_krkr_stage` 等全部继承）。§32 的「同 exe 三处路径完整性不同」现象
+与这两条直接相关。**结论不变：别在 D:\K\deepseek 树里跑任何 exe**；
+`KRKR_STAGE_ROOT` 就是给源码态跑 krkr 用的出口。ACE 来源仍未查明（谁写的、何时）。
+
+### 4. 收货布局 bug（无声的错，本轮第二个真修复）
+
+全量跑第一轮（bugfix4）：11 包全部拖完、`ALL DONE: 9821 files`、rc=0——
+但 manifest 只有 57 个文件、三媒体 0/0/0。原因：KrkrExtract 的产出布局是
+**每个 xp3 一个同名子目录**（`data/`、`image00/`、…），而 orchestrator 收货
+硬编码只认 `KrkrExtract_Output/data`，把 9764 个图片音频视频丢在半路。
+修复：`_collect_krkr_output()`——多目录 → `raw/<包名>/`（v0.7.1 人工闭环
+`--reuse-raw` 验证过的兼容形态，与静态 garbro 路径的 `raw/<stem>/` 约定一致）；
+旧机单目录形态（全部在 data/ 下）保持兼容；png/ 归 png。3 条布局锁测试
+（`tests/test_krkr_output_collect.py`）。
+
+### 5. 闭环数字（与人工闭环逐字一致）
+
+`bugfix5` 冻结 exe，`教师催眠2`，`output_fullauto3`，`--allow-gui --organize`：
+
+| 阶段 | 结果 |
+|---|---|
+| detect / case-lookup | KiriKiri score=90，命中 3 案例 |
+| extract（GUI 自动化） | ok，raw **9821** 个文件 |
+| postprocess | 2748 个 .tlg → png/ 2748 成品 |
+| **verify** | **图片 3082/3082、音频 6558/6558、视频 12/12，失败 0** |
+| organize | 图片 3082、音频 6558、视频 12、其他 169；硬链接 9821，失败 0 |
+
+单包快测（data.xp3）同样 rc=0：57 文件 = 46 .tjs + 11 .ks，与 11-06 基准一致。
+
+### 6. 遗留（记下，不阻塞）
+
+- **火绒 5 个防护项被排查实验关闭**（恶意行为监控/内存防护/文件实时监控/
+  风险软件监控/自定义防护）——**已提醒用户恢复**，别忘。
+- stage 复制把游戏目录里的 output* 产物目录也复制了一遍（单轮 ~15GB、多花
+  2-5 分钟）——优化方向：staging 跳过 output*/分类 等非引擎目录。
+- `output_fullauto1`（空壳）/`output_fullauto2`（raw=57 的半截产物 + 9764 文件
+  留在 KrkrExtract_Output/）留作证据，用户可自行删除。
+- sibling 自己写的 manifest（`write_manifest` 的 `raw_dir=outdir/data`）在多包
+  布局下只数第一个包——信息性、且会被 orchestrator 的 manifest 覆盖，暂不修。
+- 全量跑 ~40 分钟里 stage 复制 + KrkrExtract 完成判定的「stable 40s」×11 包
+  占大头；速度优化照旧等用户实测反馈再动。

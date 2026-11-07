@@ -2449,3 +2449,78 @@ CArchiveReader 实证 `uia_click_button` / `click_button_ex` / `_uia_ps` /
 - 校验 stdout 里的 JSON 别用 `s[index("{"):rindex("}")+1]` 截取再 `json.loads`
   —— dry-run 输出有多个 JSON 块时会报 `Extra data`；用
   `json.JSONDecoder().raw_decode` 逐块取。
+
+## 35. 2026-11-08 krkr 链路真机死因破案：致命框不能点 + 收货布局适配（闭环达成）
+
+### 35.1 死因链（四轮真机 → 弹窗正文铁证）
+
+四轮 `--allow-gui`（11-07 15:07/15:22 bugfix1、11-07 21:5x bugfix3、11-08 22:1x
+源码快测）全在同一处死：注入成功（`injected pid= ui= rect=`）→ 游戏弹
+`Information` → dismiss 点掉 → **1 秒后该 pid 顶层窗口全空**（`全局标题命中=[]`
+= 整个系统里都没有提取 UI 了）→ 「没点上 Full Unpack」硬失败。
+`dismiss_dialogs` 加正文日志后拿到铁证：
+
+```
+dialog[Information] body=['确定', '正常に起動できませんでした'] buttons=['确定']
+```
+
+`正常に起動できませんでした` 是 krkrZ 的**致命启动失败框**：点掉 OK =
+游戏进程 ExitProcess = 注入式提取 UI 陪葬。无崩溃记录（Application Error 0 条）——
+是正常退出路径，不是 crash。
+
+### 35.2 旧结论纠错（2026-11-06 的误判）
+
+§33 的「关掉它，data.xp3 立刻 +57 个文件」把因果搞反了：抽文件发生在
+**弹窗挂着的时候**（引擎启动尝试中钩子就抽走了脚本），dismiss 只是让观察解堵；
+dismiss 后 UI 其实同样死亡——只是当时 data.xp3 的计数已经到手、下一包的
+落点失败把注意力引开了。**教训：对「关掉弹窗后发生了什么」的归因，要区分
+「事件顺序」和「因果」。**
+
+### 35.3 修复与验证
+
+- `NO_AUTO_DISMISS` 默认开（`KRKR_NO_AUTO_DISMISS=0` 回退）：不点任何提示框，
+  带弹窗拖包。完成判定 v0.7.0 起就不再要求无对话框；落点扫描按
+  WindowFromPoint 口径天然绕开弹窗区域（快测实证 initial drop point=(818,288)
+  正常）。单包快测：data.xp3 → 57 文件（46 .tjs + 11 .ks）rc=0。
+- 全量闭环（bugfix5 冻结 exe，11 包全自动）：**rc=0，raw 9821，图片 3082/3082、
+  音频 6558/6558、视频 12/12 零失败**，organize 硬链接 9821 失败 0 —— 与
+  v0.7.1 人工闭环逐字一致。**krkr 链路真机闭环达成。**
+- 排除法：火绒 5 项防护关闭后照旧死（非火绒）；stage 移出 D:\K 树后照旧死
+  （非 ACE/降权，但 stage 位置仍要管，见 35.4）。
+- 弯路留档：standalone 模式（xp3 直拖 Lite 注入器）真机实证无效——注入器对
+  xp3 投递毫无反应（它只收 exe，界面文案「Or drop executable file here」），
+  相关代码已全部移除，教训是**先验证目标窗口收不收拖放，再写自动化**。
+
+### 35.4 D:\K\deepseek 根上的两条非继承 ACE（§32 谜底推进）
+
+`icacls` 实测 `D:\K\deepseek` 根：
+
+```
+Everyone:(CI)(DENY)(DC)
+S-1-4-466530695-238761456:(OI)(CI)(W,D,DC)
+```
+
+与 §32 在 packaging\Output\orchestrator 上发现的「来源未查明」两条完全同款——
+原来它们打在 **deepseek 根**上、整棵树连坐。§32 的完整性差异现象与此相关；
+ACE 的写入者与时间仍未查明。**规矩：任何 exe / stage 都别放 D:\K\deepseek
+树里跑**；为此新增 `KRKR_STAGE_ROOT` env（源码态把 stage 指到树外）。
+
+### 35.5 收货布局 bug（第二个真修复：无声的错）
+
+bugfix4 全量跑：11 包拖完、`ALL DONE: 9821 files`、rc=0，但 manifest 只有 57 个
+文件、三媒体 0/0/0。原因：KrkrExtract 按**每个 xp3 一个同名子目录**产出
+（`data/`、`image00/`、…），而收货硬编码只认 `KrkrExtract_Output/data`——
+9764 个媒体文件丢在半路，rc=0 照报。修复 `_collect_krkr_output()`（多目录 →
+`raw/<包名>/`；旧单目录形态兼容；png 归 png）+ 3 条布局锁测试。
+**教训：「链路通了」要数到最终交付目录里的文件，不能只看退出码和中间日志。**
+
+### 35.6 版本与遗留
+
+- `bugfix5` 部署标准路径（zip SHA256 `12d472fe…4dfd9b`，提交 `c286fe6`，
+  BUILD_INFO/README/SHA 三验 + CArchiveReader 实证 `NO_AUTO_DISMISS` 进包）。
+- 火绒 5 项防护（恶意行为监控/内存防护/文件实时监控/风险软件监控/自定义防护）
+  被排查实验关闭——**提醒用户恢复**。
+- stage 复制把游戏目录里 output* 产物目录也复制（单轮 ~15GB、+2-5 分钟）——
+  优化方向：staging 跳过 output*/分类 等非引擎目录。
+- sibling 的 `write_manifest`（`raw_dir=outdir/data`）多包布局下只数第一个包；
+  信息性、被 orchestrator manifest 覆盖，暂不修（记录在案）。
