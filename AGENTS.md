@@ -32,8 +32,7 @@
 >   标 `bugfix3` / 构建时间 21:11；README 125 行逐字相同、包内 exe 与 dist 同 SHA
 >   （`fdd45581…56e0eaa`）、`testzip()` 无损坏（1514 项）；CArchiveReader 实证
 >   `gui._make_root`（`2001f62` 的 tkinterdnd2 兜底）确实进包。
->   **标准路径 `D:\GalgameUnpacker\orchestrator`**（旧 bugfix2 目录改名
->   `orchestrator_prev_bugfix2` 保留未删，全程未删文件）。
+>   **标准路径 `D:\GalgameUnpacker\orchestrator`**（旧版本已清理，见下）。
 >   部署自检：`--doctor` rc=0、`--gui-smoke` rc=0、冻结 exe 对 `教师催眠2` 只读
 >   `--dry-run` rc=0（KiriKiri score=90、案例库命中）。
 >   **GUI 真机启动已验证（18:4x，ShellExecute 拉起 + 进程/窗口/截图三重确认）**——
@@ -1936,3 +1935,21 @@ pytest 整个会话被打断。同会话里 `trash` 的 `CoInitializeEx` 也报
   拉起 GUI 用 PowerShell `Start-Process` 稳定；JSON 校验别用
   `s[out.index("{"):out.rindex("}")+1]` 截取（多个 JSON 块会 Extra data），
   用 `json.JSONDecoder().raw_decode`。
+
+### 5. 旧版本清理（2026-11-07 21:4x，用户主动要求）
+
+删除前逐目录核过内容：两个部署旧目录的异常体积（13G / 4.8G）全是 `_krkr_stage`
+（加密 krkr 失败轮的 ASCII 暂存：游戏 xp3 副本 + KrkrExtract 工具，**无解包产出**，
+正式产物在 `D:\HY\教师催眠2\output` 完好）。已删除：
+
+- 部署区 `D:\GalgameUnpacker\`：`orchestrator_prev_bugfix1`（13G，含失败轮 stage）、
+  `orchestrator_prev_bugfix2`（357M）、`orchestrator_prev_dropfix1`（4.8G，含 stage）。
+  现存只剩 `orchestrator`（bugfix3）。
+- 仓库 `_spike_pkg/dist/`：`orchestrator_prev_{082,bugfix1,bugfix2,dropfix1}`、
+  `_r_213543`（临时解压副本）、`bugfix1-prelim zip`；保留 `dist/orchestrator`（当前构建）。
+- `_spike_pkg/build/`：`build_prev_{dropfix1,bugfix1,bugfix2,bugfix3_partial}`；
+  保留 `build/orchestrator`。
+- `packaging/Output/`：`dropfix1 / bugfix1 / bugfix2` 三个被取代的 zip；
+  **保留已发布的 `0.8.2-portable.zip` 与当前 `bugfix3-portable.zip`**。
+- 实测释放约 **17 GB**（374G→357G used，可用 79G→95G）。全程显式路径 rm -rf，
+  未用通配符，未触碰当前包与用户数据。
