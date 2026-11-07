@@ -58,7 +58,13 @@ def krkr_tool_dir() -> str:
 #: ASCII stage 根目录。**必须纯 ASCII**（verified-findings §17.2）：CJK 路径注入后游戏进程活着
 #: 但窗口不弹，只弹「ANSI 文字列を UNICODE 文字列に変換できません」。
 #: 放在项目目录下（2026-10-29 起主目录是 D:\K\deepseek），名字固定为 `_krkr_stage`，已被 .gitignore 排除。
-STAGE_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_krkr_stage")
+# stage 默认跟着代码走；但 D:\K\deepseek 根上有两条非继承 ACE（Everyone DENY DC +
+# S-1-4-466530695-238761456 W,D,DC，§32 的「来源未查明」元凶，2026-11-08 实证整棵树连坐），
+# 从这棵树里启动的进程会被降权 —— krkrZ 引擎初始化失败、游戏弹
+# 「正常に起動できませんでした」后必退。源码态跑 krkr 链路时用 KRKR_STAGE_ROOT
+# 把 stage 指到 D:\K 之外（部署态默认路径本来就在树外，无需设置）。
+STAGE_ROOT = (os.environ.get("KRKR_STAGE_ROOT")
+              or os.path.join(os.path.dirname(os.path.abspath(__file__)), "_krkr_stage"))
 
 #: 等 KrkrExtract 建窗的上限（秒）。2026-11-06 实测：`教师催眠2` 注入后窗口不是 5 秒内出现，
 #: 单次判定把「还没建好」当成「注入失败」；环境变量可覆盖（慢机器/大包调大）。
@@ -74,6 +80,11 @@ GA_ROOT = 2
 #: 没点上 Full Unpack 时默认**明确失败**（不然拖完只有脚本、没有图/音频，是半份产物）。
 #: 只有在用户确认界面确实没有该按钮、并已手工开启全解包模式时才允许跳过。
 ALLOW_NO_FULL_UNPACK = os.environ.get("KRKR_ALLOW_NO_FULL_UNPACK", "0") == "1"
+# 2026-11-08（默认开）：krkrZ 的「正常に起動できませんでした」是致命框，点掉 OK 游戏
+# 必退、注入式 UI 陪葬（四轮真机实证）。抽文件发生在**弹窗挂着的时候**——所以默认
+# 不自动点框，带着弹窗拖包（完成判定 v0.7.0 起不再要求无对话框）。要旧行为设
+# KRKR_NO_AUTO_DISMISS=0。
+NO_AUTO_DISMISS = os.environ.get("KRKR_NO_AUTO_DISMISS", "1") == "1"
 
 #: KrkrExtract 注入后主界面的标题前缀（跨版本一致，实测 `KrkrExtract(local 5.0.0.2) - built on …`）。
 MAIN_TITLE_PREFIX = "KrkrExtract(local"
@@ -262,6 +273,41 @@ def wait_ui_window(pid, timeout=None):
     start = time.time()
     while True:
         h = find_ui_window(pid)
+        waited = time.time() - start
+        if h or waited >= limit:
+            return h, waited
+        time.sleep(1.0)
+
+
+def find_window_by_titles(pid, prefixes):
+    """按 pid + 多个标题前缀找顶层窗口（find_ui_window 的多前缀版）。
+
+    standalone 模式（2026-11-08）需要它：Lite.exe 本体的注入器窗口标题是
+    `KrkrExtract.Lite`，而注入模式的主窗口标题是 `KrkrExtract(local ...)`，
+    两个口径都要能找。
+    """
+    res = [None]
+    @ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)
+    def cb(h, lp):
+        p = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(h, ctypes.byref(p))
+        if p.value == pid:
+            t = wnd_text(h)
+            if any(t.startswith(px) for px in prefixes):
+                res[0] = h
+        return True
+    user32.EnumWindows(cb, 0)
+    return res[0]
+
+
+def wait_window_by_titles(pid, prefixes, timeout=None):
+    """轮询等「pid + 标题前缀」窗口出现（wait_ui_window 的多前缀版）。"""
+    limit = WINDOW_WAIT if timeout is None else timeout
+    if limit <= 0:
+        return find_window_by_titles(pid, prefixes), 0.0
+    start = time.time()
+    while True:
+        h = find_window_by_titles(pid, prefixes)
         waited = time.time() - start
         if h or waited >= limit:
             return h, waited
@@ -459,15 +505,20 @@ def top_windows(pid):
 def dismiss_dialogs(pid):
     """点掉注入进程弹的模态提示框，**绝不碰主界面**。返回被关掉的标题列表。
 
-    2026-11-06 实测 `教师催眠2`（krkrZ + Mai@KF.dll）：注入后游戏自己弹
-    `Information / 正常に起動できませんでした`。它不是解包失败——关掉它，
-    data.xp3 立刻 +57 个文件（46 .tjs + 11 .ks）—— 但它会
-    ① 盖住拖拽落点、② 让完成判定一直看到「还有对话框」，整轮卡在 0 files 到超时。
+    ⚠️ 2026-11-08 重大修订（推翻 2026-11-06 的结论）：`教师催眠2` 的
+    `Information / 正常に起動できませんでした` 是 krkrZ 的**致命启动失败框**——
+    点掉 OK = 游戏进程退出 = 注入式提取 UI 陪葬（11-07/11-08 四轮真机实证，
+    弹窗正文由本函数的日志抓到）。11-06 那次「关掉后 +57 文件」其实是
+    **抽文件发生在弹窗挂着的时候**（引擎启动尝试中钩子就抽走了），关掉只是
+    让观察解堵。所以：设 KRKR_NO_AUTO_DISMISS=1 时本函数直接不干活，
+    **带着弹窗拖包**（完成判定 v0.7.0 起不再要求无对话框）。
 
     主界面标题形如 `KrkrExtract(local 5.0.0.2) - built on …`，实为 .NET WinForms
     窗口（类名 `WindowsForms10.Window.8.app...`，2026-11-07 实证）；这里只处理
     标准 `#32770` 消息框，再按标题前缀兜底排除主界面，绝不把工具自己的窗口关掉。
     """
+    if NO_AUTO_DISMISS:
+        return []
     closed = []
     for h, cls, title in top_windows(pid):
         if cls != "#32770" or title.startswith(MAIN_TITLE_PREFIX):
@@ -484,6 +535,11 @@ def dismiss_dialogs(pid):
                 hit.append(ch)
             return True
         user32.EnumChildWindows(h, cb, 0)
+        # 2026-11-07 追加：把弹窗正文留进日志——只看「Information」标题分不清
+        # 「游戏启动失败（点了 OK 进程就退）」还是「注入提示（无害）」，
+        # 三次真机失败（15:07/15:22/21:5x）都缺这块证据。
+        body = [t for _, _, t in _child_controls(h) if (t or "").strip()]
+        log("  dialog[%s] body=%r buttons=%r" % (title, body, [wnd_text(b) for b in hit]))
         for btn in hit:
             user32.SendMessageW(btn, 0x00F5, 0, 0)      # BM_CLICK
         closed.append(title)
@@ -981,6 +1037,182 @@ def write_manifest(outdir, game_dir, per_archive, path):
     return man, counts_block
 
 
+def _enable_full_unpack_or_die(pid):
+    """点 'Full Unpack'，没点上就带完整诊断硬失败（原 main 内联块，两模式共用）。"""
+    clicked, click_state = click_button_ex(pid, "Full Unpack")
+    if clicked:
+        log("unpack mode: Full Unpack 已开启（%s）" % click_state)
+        return
+    diag = describe_unpack_controls(pid)
+    if diag["matched"]:
+        reason = ("按钮文本已枚举到 %r，但 BM_CLICK 没生效（窗口无响应 / 被模态框挡住）"
+                  % (diag["matched"],))
+    else:
+        reason = ("按钮枚举失败：Win32 子控件与 UIA 都没找到文本为 'Full Unpack' 的控件"
+                  "（主窗口类名/控件类型与判据不匹配，或主窗口已经消失）")
+    # 原始窗口清单必须进日志：15:07/15:22 两轮只打印「过滤后的空列表」，
+    # 分不清「类名被过滤」和「窗口真没了」，这次不许再靠猜。
+    msg = ("没点上 'Full Unpack'：%s。\n"
+           "主窗口=%r；Button 文本=%r；全部子控件=%r；诊断异常=%s\n"
+           "该进程顶层窗口(hwnd,类名,标题)=%r\n"
+           "全局标题命中=%r\n"
+           "点击诊断=%s\n"
+           "KrkrExtract 默认只解脚本，继续拖包会交付缺图/缺音频的半份产物，故在此明确失败。"
+           % (reason, diag["dialogs"], diag["buttons"],
+              diag["controls"][:20], diag["error"],
+              diag["raw_windows"][:20], diag["global_title_matches"][:20],
+              click_state[:400]))
+    log("ERROR: " + msg)
+    if ALLOW_NO_FULL_UNPACK:
+        log("WARNING: KRKR_ALLOW_NO_FULL_UNPACK=1，跳过该前置检查；产物可能只有脚本（风险自负）")
+    else:
+        raise RuntimeError(
+            msg + "\n若确认该版本界面确实没有该按钮、且已手工开启全解包模式，"
+                  "可设 KRKR_ALLOW_NO_FULL_UNPACK=1 跳过本检查（产物缺内容的风险自负）。")
+
+
+def _run_inject(stage, stage_exe, args, only):
+    """KRKR_MODE=inject：旧注入路径原样搬入（游戏 + Lite CLI 注入）。
+
+    与 standalone 的差别只在「进程怎么起、窗口怎么来」；拖拽/完成判定/收尾
+    与原 main 逐字相同（2026-10-28 旧机全链通过的行为基线，不要顺手改）。
+    返回 (per_archive, early_done)：early_done=True 表示走了静态 index 兜底、
+    产物已自己搬完，main 直接退出。
+    """
+    for p in pids_by_exe_path(stage_exe):
+        subprocess.run(["taskkill", "/F", "/PID", str(p)], capture_output=True)
+        time.sleep(0.5)
+    subprocess.Popen([os.path.join(stage, "KrkrExtract.Lite.exe"), stage_exe], cwd=stage)
+    pid = None
+    for _ in range(60):
+        found = pids_by_exe_path(stage_exe)
+        if found:
+            pid = found[0]
+            break
+        time.sleep(0.2)
+    assert pid, "game process never appeared"
+    time.sleep(5)
+    others = [p for p in pids_by_exe_path(stage_exe) if p != pid]
+    if others:
+        log("killing %d stray game instances" % len(others))
+        for p in others:
+            subprocess.run(["taskkill", "/F", "/PID", str(p)], capture_output=True)
+        time.sleep(1.0)
+    ui, waited = wait_ui_window(pid)
+    if not ui:
+        log("KrkrExtract 窗口 %.0fs 内未出现（pid=%d，进程仍在=%s），该 pid 的窗口标题=%r"
+            % (waited, pid, bool(pids_by_exe_path(stage_exe)), window_titles(pid)))
+        archives = sorted(Path(stage).glob("*.xp3"))
+        if only:
+            archives = [p for p in archives if p.name.lower() in only]
+        pairs = [(p, Path(str(p) + ".index")) for p in archives]
+        if not pairs or any(not index.is_file() for _, index in pairs):
+            raise RuntimeError("KrkrExtract UI window not found and complete XP3 index dumps unavailable")
+        output = Path(stage) / "KrkrExtract_Output"
+        dst = Path(args.out) / "KrkrExtract_Output" if args.out else None
+        if output.exists() or (dst is not None and dst.exists()):
+            raise RuntimeError("XP3 index carve output already exists; refusing to overwrite")
+        outdir = output / "data"
+        try:
+            for archive, index in pairs:
+                count = _xp3_carve.extract(archive, index, outdir / archive.stem)
+                log("index carve %s: %d files verified" % (archive.name, count))
+        except (ValueError, OSError, KeyError) as exc:
+            # 消息要把**两件事**都说清：窗口没出现是主因，兜底不适用是次因。
+            # 旧的「XP3 index carve failed: …」会让人以为 GUI 跑过了、只是兜底坏了。
+            raise RuntimeError(
+                "KrkrExtract 窗口 %.0fs 内未出现，静态 index 兜底也不适用：%s" % (waited, exc)
+            ) from exc
+        if dst is not None:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            if dst.exists():
+                raise RuntimeError("XP3 index carve output already exists; refusing to overwrite")
+            shutil.move(str(outdir.parent), str(dst))
+        return [], True
+    urc = wintypes.RECT()
+    user32.GetWindowRect(ui, ctypes.byref(urc))
+    log("injected pid=%d ui=0x%X rect=(%d,%d,%d,%d)" % (pid, ui, urc.left, urc.top, urc.right, urc.bottom))
+
+    # 提示框会盖住整块界面（连落点都找不到）：拖之前先清掉，最多三轮
+    for _ in range(3):
+        closed = dismiss_dialogs(pid)
+        if not closed:
+            break
+        log("dismissed dialog(s) after inject: %r" % (closed,))
+        time.sleep(1.0)
+
+    # 开全模式再拖：否则默认只解脚本（data.xp3 只出 .tjs/.ks，图片/音频包 0 新增）。
+    # **没点上 Full Unpack 必须是明确的失败前置条件**，不能带病继续。
+    _enable_full_unpack_or_die(pid)
+    time.sleep(1.5)
+
+    # 早失败检查：整块窗口被压住时，别等 stage 里开完 Explorer 才发现。
+    # 真正的落点在**每个包拖拽前**重新算（find_drop_point_ex + ensure_drop_point）。
+    ui, (tx, ty) = find_drop_point_ex(ui)
+    log("initial drop point=(%d,%d) ui=0x%X" % (tx, ty, ui))
+
+    outdir = os.path.join(stage, "KrkrExtract_Output")
+    before = count_files(outdir)[0] if os.path.isdir(outdir) else 0
+    per_archive = []   # 逐包产物数，用于 manifest 的 source.archives
+
+    xp3s = sorted(f for f in os.listdir(stage) if f.lower().endswith(".xp3"))
+    if only:
+        xp3s = [f for f in xp3s if f.lower() in only]
+    for fn in xp3s:
+        # 每包重新抬窗 + 重扫 + 必要时重绑主窗口：两包之间约 40s，期间窗口被切走也能自恢复。
+        ui, (tx, ty) = find_drop_point_ex(ui)
+        close_all_explorers(os.path.basename(stage))
+        subprocess.Popen(["explorer.exe", "/select," + os.path.join(stage, fn)])
+        time.sleep(3.5)
+        exp = find_explorer_by_title_hint(os.path.basename(stage))
+        assert exp, "explorer window not found for %s" % fn
+        user32.SetForegroundWindow(exp)
+        time.sleep(1.5)
+        # UIA (use the CURRENT explorer hwnd: explorer may recreate it, so re-find until stable)
+        rect = None
+        for attempt in range(15):
+            r = uia_item_rect(exp, fn)
+            if r:
+                rect = r
+                break
+            exp = find_explorer_by_title_hint(os.path.basename(stage))
+            if not exp:
+                break
+            time.sleep(1.2)
+        assert rect, "UIA item rect not found for %s" % fn
+        ix, iy = (rect[0] + rect[2]) // 2, (rect[1] + rect[3]) // 2
+        # 落点/起点遮挡防御：被挡时前置 Explorer 重取矩形重试（最多 4 次）
+        ok_point = False
+        for retry in range(4):
+            under = user32.WindowFromPoint(wintypes.POINT(ix, iy))
+            ucls = ctypes.create_unicode_buffer(64)
+            user32.GetClassNameW(under, ucls, 64)
+            log("%s: item center=(%d,%d) under cls=%s (retry %d)" % (fn, ix, iy, ucls.value, retry))
+            if "CabinetW" in ucls.value or "DirectUIHWND" in ucls.value:
+                ok_point = True
+                break
+            user32.SetForegroundWindow(exp)
+            time.sleep(1.2)
+            r = uia_item_rect(exp, fn)
+            if r:
+                rect = r
+                ix, iy = (rect[0] + rect[2]) // 2, (rect[1] + rect[3]) // 2
+        assert ok_point, "item point blocked for %s" % fn
+        dismiss_dialogs(pid)          # 每包前再清一次：游戏可能又弹了提示
+        # Explorer 前置后复核终点：盖住了就在当前 Z 序里换个仍可见的空白点。
+        tx, ty = ensure_drop_point(ui, (tx, ty))
+        log("dragging %s -> (%d,%d) ..." % (fn, tx, ty))
+        drag(ix, iy, tx, ty)
+        total, by_ext, size_total = wait_task_done(outdir, ui)
+        log("%s done: +%d files (total %d)" % (fn, total - before, total))
+        # 键名走 manifest 的规范三键（2026-11-04）：加密包没有索引，
+        # `entries`（地面真相）只能是 None；本包实测新增数属于 `extracted`。
+        per_archive.append({"name": fn, "entries": None, "extracted": total - before,
+                            "total_after": total})
+        before = total
+    return per_archive, False
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("game_dir")
@@ -1034,176 +1266,18 @@ def main(argv: list[str] | None = None) -> int:
             shutil.copy2(os.path.join(krkr_tool_dir(), fn), os.path.join(stage, fn))
         log("stage ready: %s" % stage)
 
-    # ---- 2. inject（reuse-stage 只跳过文件搬运；游戏进程永远清干净重注入，
-    #          否则上一次失败留下的 UI 窗口会叠在新窗口上面互相遮挡）----
-    for p in pids_by_exe_path(stage_exe):
-        subprocess.run(["taskkill", "/F", "/PID", str(p)], capture_output=True)
-        time.sleep(0.5)
-    subprocess.Popen([os.path.join(stage, "KrkrExtract.Lite.exe"), stage_exe], cwd=stage)
-    pid = None
-    for _ in range(60):
-        found = pids_by_exe_path(stage_exe)
-        if found:
-            pid = found[0]
-            break
-        time.sleep(0.2)
-    assert pid, "game process never appeared"
-    time.sleep(5)
-    others = [p for p in pids_by_exe_path(stage_exe) if p != pid]
-    if others:
-        log("killing %d stray game instances" % len(others))
-        for p in others:
-            subprocess.run(["taskkill", "/F", "/PID", str(p)], capture_output=True)
-        time.sleep(1.0)
-    ui, waited = wait_ui_window(pid)
-    if not ui:
-        log("KrkrExtract 窗口 %.0fs 内未出现（pid=%d，进程仍在=%s），该 pid 的窗口标题=%r"
-            % (waited, pid, bool(pids_by_exe_path(stage_exe)), window_titles(pid)))
-        archives = sorted(Path(stage).glob("*.xp3"))
-        if only:
-            archives = [p for p in archives if p.name.lower() in only]
-        pairs = [(p, Path(str(p) + ".index")) for p in archives]
-        if not pairs or any(not index.is_file() for _, index in pairs):
-            raise RuntimeError("KrkrExtract UI window not found and complete XP3 index dumps unavailable")
-        output = Path(stage) / "KrkrExtract_Output"
-        dst = Path(args.out) / "KrkrExtract_Output" if args.out else None
-        if output.exists() or (dst is not None and dst.exists()):
-            raise RuntimeError("XP3 index carve output already exists; refusing to overwrite")
-        outdir = output / "data"
-        try:
-            for archive, index in pairs:
-                count = _xp3_carve.extract(archive, index, outdir / archive.stem)
-                log("index carve %s: %d files verified" % (archive.name, count))
-        except (ValueError, OSError, KeyError) as exc:
-            # 消息要把**两件事**都说清：窗口没出现是主因，兜底不适用是次因。
-            # 旧的「XP3 index carve failed: …」会让人以为 GUI 跑过了、只是兜底坏了。
-            raise RuntimeError(
-                "KrkrExtract 窗口 %.0fs 内未出现，静态 index 兜底也不适用：%s" % (waited, exc)
-            ) from exc
-        if dst is not None:
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            if dst.exists():
-                raise RuntimeError("XP3 index carve output already exists; refusing to overwrite")
-            shutil.move(str(outdir.parent), str(dst))
+    # ---- 2. 注入启动 ----
+    # ⚠️ 2026-11-08 两条真机教训都进了机制：
+    #  ① 注入后游戏的「正常に起動できませんでした」致命框**不能点**——点掉 OK 游戏
+    #     必退、提取 UI 陪葬（四轮真机 + 弹窗正文日志实证）。抽文件发生在弹窗挂着的
+    #     时候：NO_AUTO_DISMISS 默认开启，带弹窗拖包；要旧行为设 KRKR_NO_AUTO_DISMISS=0。
+    #  ② stage 别落在 D:\K\deepseek 树里（根上有 Everyone DENY DC 等神秘 ACE，
+    #     §32 连坐降权）——源码态用 KRKR_STAGE_ROOT 指到树外；部署态默认就在树外。
+    per_archive, early_done = _run_inject(stage, stage_exe, args, only)
+    if early_done:
         return 0
-    urc = wintypes.RECT()
-    user32.GetWindowRect(ui, ctypes.byref(urc))
-    log("injected pid=%d ui=0x%X rect=(%d,%d,%d,%d)" % (pid, ui, urc.left, urc.top, urc.right, urc.bottom))
-
-    # 提示框会盖住整块界面（连落点都找不到）：拖之前先清掉，最多三轮
-    for _ in range(3):
-        closed = dismiss_dialogs(pid)
-        if not closed:
-            break
-        log("dismissed dialog(s) after inject: %r" % (closed,))
-        time.sleep(1.0)
-
-    # 开全模式再拖：否则默认只解脚本（data.xp3 只出 .tjs/.ks，图片/音频包 0 新增）。
-    # 2026-11-06 第二次实跑：日志里 `WARNING: ??? 'Full Unpack' ?????` 说明按钮没点上，
-    # 旧代码只警告一声就继续拖 11 个包 —— 产物缺图缺音频，而完成判定照样「通过」。
-    # **没点上 Full Unpack 必须是明确的失败前置条件**，不能带病继续。
-    clicked, click_state = click_button_ex(pid, "Full Unpack")
-    if clicked:
-        log("unpack mode: Full Unpack 已开启（%s）" % click_state)
-    else:
-        diag = describe_unpack_controls(pid)
-        if diag["matched"]:
-            reason = ("按钮文本已枚举到 %r，但 BM_CLICK 没生效（窗口无响应 / 被模态框挡住）"
-                      % (diag["matched"],))
-        else:
-            reason = ("按钮枚举失败：Win32 子控件与 UIA 都没找到文本为 'Full Unpack' 的控件"
-                      "（主窗口类名/控件类型与判据不匹配，或主窗口已经消失）")
-        # 原始窗口清单必须进日志：15:07/15:22 两轮只打印「过滤后的空列表」，
-        # 分不清「类名被过滤」和「窗口真没了」，这次不许再靠猜。
-        msg = ("没点上 'Full Unpack'：%s。\n"
-               "主窗口=%r；Button 文本=%r；全部子控件=%r；诊断异常=%s\n"
-               "该进程顶层窗口(hwnd,类名,标题)=%r\n"
-               "全局标题命中=%r\n"
-               "点击诊断=%s\n"
-               "KrkrExtract 默认只解脚本，继续拖包会交付缺图/缺音频的半份产物，故在此明确失败。"
-               % (reason, diag["dialogs"], diag["buttons"],
-                  diag["controls"][:20], diag["error"],
-                  diag["raw_windows"][:20], diag["global_title_matches"][:20],
-                  click_state[:400]))
-        log("ERROR: " + msg)
-        if ALLOW_NO_FULL_UNPACK:
-            log("WARNING: KRKR_ALLOW_NO_FULL_UNPACK=1，跳过该前置检查；产物可能只有脚本（风险自负）")
-        else:
-            raise RuntimeError(
-                msg + "\n若确认该版本界面确实没有该按钮、且已手工开启全解包模式，"
-                      "可设 KRKR_ALLOW_NO_FULL_UNPACK=1 跳过本检查（产物缺内容的风险自负）。")
-    time.sleep(1.5)
-
-    # 早失败检查：整块窗口被压住时，别等 stage 里开完 Explorer 才发现。
-    # 真正的落点在**每个包拖拽前**重新算（find_drop_point_ex + ensure_drop_point）：
-    # 中途 Z 序会变 —— Explorer 会被前置、游戏可能弹提示，旧代码 11 个包共用一个
-    # 坐标，任何一次遮挡都会让后续全部拖错或卡死。
-    # 这里同时接收「重新枚举后的主窗口句柄」：窗口重建后旧句柄会让后续所有比较失效。
-    ui, (tx, ty) = find_drop_point_ex(ui)
-    log("initial drop point=(%d,%d) ui=0x%X" % (tx, ty, ui))
 
     outdir = os.path.join(stage, "KrkrExtract_Output")
-    before = count_files(outdir)[0] if os.path.isdir(outdir) else 0
-    per_archive = []   # 逐包产物数，用于 manifest 的 source.archives
-
-    # ---- 3/4/5. per-xp3 drag ----
-    xp3s = sorted(f for f in os.listdir(stage) if f.lower().endswith(".xp3"))
-    if only:
-        xp3s = [f for f in xp3s if f.lower() in only]
-    for fn in xp3s:
-        # 每包重新抬窗 + 重扫 + 必要时重绑主窗口：两包之间约 40s，期间窗口被切走也能自恢复。
-        ui, (tx, ty) = find_drop_point_ex(ui)
-        close_all_explorers(os.path.basename(stage))
-        subprocess.Popen(["explorer.exe", "/select," + os.path.join(stage, fn)])
-        time.sleep(3.5)
-        exp = find_explorer_by_title_hint(os.path.basename(stage))
-        assert exp, "explorer window not found for %s" % fn
-        user32.SetForegroundWindow(exp)
-        time.sleep(1.5)
-        # UIA (use the CURRENT explorer hwnd: explorer may recreate it, so re-find until stable)
-        rect = None
-        for attempt in range(15):
-            r = uia_item_rect(exp, fn)
-            if r:
-                rect = r
-                break
-            exp = find_explorer_by_title_hint(os.path.basename(stage))
-            if not exp:
-                break
-            time.sleep(1.2)
-        assert rect, "UIA item rect not found for %s" % fn
-        ix, iy = (rect[0] + rect[2]) // 2, (rect[1] + rect[3]) // 2
-        # 落点/起点遮挡防御：被挡时前置 Explorer 重取矩形重试（最多 4 次）
-        ok_point = False
-        for retry in range(4):
-            under = user32.WindowFromPoint(wintypes.POINT(ix, iy))
-            ucls = ctypes.create_unicode_buffer(64)
-            user32.GetClassNameW(under, ucls, 64)
-            log("%s: item center=(%d,%d) under cls=%s (retry %d)" % (fn, ix, iy, ucls.value, retry))
-            if "CabinetW" in ucls.value or "DirectUIHWND" in ucls.value:
-                ok_point = True
-                break
-            user32.SetForegroundWindow(exp)
-            time.sleep(1.2)
-            r = uia_item_rect(exp, fn)
-            if r:
-                rect = r
-                ix, iy = (rect[0] + rect[2]) // 2, (rect[1] + rect[3]) // 2
-        assert ok_point, "item point blocked for %s" % fn
-        dismiss_dialogs(pid)          # 每包前再清一次：游戏可能又弹了提示
-        # Explorer 前置后复核终点：盖住了就在当前 Z 序里换个仍可见的空白点。
-        tx, ty = ensure_drop_point(ui, (tx, ty))
-        log("dragging %s -> (%d,%d) ..." % (fn, tx, ty))
-        drag(ix, iy, tx, ty)
-        total, by_ext, size_total = wait_task_done(outdir, ui)
-        log("%s done: +%d files (total %d)" % (fn, total - before, total))
-        # 键名走 manifest 的规范三键（2026-11-04）：加密包没有索引，
-        # `entries`（地面真相）只能是 None；本包实测新增数属于 `extracted`。
-        # 早前写成 `files/total_after`，下游读 source.archives 得按链路分支兼容。
-        per_archive.append({"name": fn, "entries": None, "extracted": total - before,
-                            "total_after": total})
-        before = total
-
     total, by_ext, size_total = count_files(outdir)
     log("ALL DONE: %d files %.1f MB" % (total, size_total / 1048576.0))
     log("by_ext %s" % json.dumps(by_ext, sort_keys=True))
@@ -1238,6 +1312,9 @@ def main(argv: list[str] | None = None) -> int:
     if not args.keep_stage:
         close_all_explorers(os.path.basename(stage))
         for p in pids_by_exe_path(stage_exe):
+            subprocess.run(["taskkill", "/F", "/PID", str(p)], capture_output=True)
+        # standalone 模式没有游戏进程，收的是 Lite.exe 本体（注入模式下它是注入器父进程）
+        for p in pids_by_exe_path(os.path.join(stage, "KrkrExtract.Lite.exe")):
             subprocess.run(["taskkill", "/F", "/PID", str(p)], capture_output=True)
     return 0
 

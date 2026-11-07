@@ -350,6 +350,32 @@ def _move_dir_clean(src: Path, dst: Path) -> str | None:
     return None
 
 
+def _collect_krkr_output(kout: Path, raw_dir: Path, png_dir: Path) -> str | None:
+    """把 KrkrExtract 的产出搬进 raw/ 与 png/，成功返回 None，失败返回原因。
+
+    布局（2026-11-08 教师催眠2 真机实证）：**每个拖进去的 xp3 一个同名子目录**
+    （data/、image00/、…、voice02/）——raw/<包名>/ 正是 v0.7.1 人工闭环
+    （--reuse-raw rc=0）验证过兼容全管线的形态，与静态 garbro 路径的
+    `raw/<xp3.stem>/` 约定一致。旧机单目录形态（全部在 data/ 下，教师催眠1
+    5724 文件那次）保持兼容：内容并到 raw 根。png/（KrkrExtract 自带的
+    tlg→png 产物，若有）归 png 目录，不进 raw。
+    """
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    entries = sorted(e for e in kout.iterdir() if e.name != "png")
+    if len(entries) == 1 and entries[0].name == "data":
+        err = _move_dir_clean(entries[0], raw_dir)
+    else:
+        err = None
+        for e in entries:
+            err = _move_dir_clean(e, raw_dir / e.name)
+            if err:
+                break
+    # png 的搬移对两种布局都要执行（单 data 分支别提前 return 跳过它）
+    if err is None and (kout / "png").is_dir():
+        err = _move_dir_clean(kout / "png", png_dir)
+    return err
+
+
 # ---------------------------------------------------------------- 阶段 1: detect
 
 def stage_detect(ctx: Ctx) -> Stage:
@@ -840,7 +866,8 @@ def stage_extract_kirikiri(ctx: Ctx) -> Stage:
         rc, out = _run_sibling(krkr_auto_extract,
                                [str(ctx.game_dir), "--out", str(ctx.out_dir)])
         ctx.log("extract", f"$ krkr_auto_extract.py rc={rc}\n{out}")
-        # krkr_auto_extract 产出 <out>/KrkrExtract_Output/{data,png}
+        # krkr_auto_extract 产出 <out>/KrkrExtract_Output/<xp3名>/（多目录）或
+        # 旧机形态 <out>/KrkrExtract_Output/data/（单目录）；png/ 归 png。
         kout = ctx.out_dir / "KrkrExtract_Output"
         if rc != 0 or not kout.is_dir():
             gui_error = _gui_error_from_output(out, rc)
@@ -849,12 +876,9 @@ def stage_extract_kirikiri(ctx: Ctx) -> Stage:
                          f"真实报错：{gui_error}")
             st.seconds = time.time() - t0
             return st
-        data_dir = kout / "data" if (kout / "data").is_dir() else kout
-        # 搬之前先清目标（`_move_dir_clean` 内部保证「不会嵌层」）。两条搬移共用同一个
+        # 搬之前先清目标（`_move_dir_clean` 内部保证「不会嵌层」）。所有搬移共用同一个
         # 失败出口：任一条搬不干净就判失败，不让产物停在「搬了一半」的状态。
-        err = _move_dir_clean(data_dir, ctx.raw_dir)
-        if err is None and (kout / "png").is_dir():
-            err = _move_dir_clean(kout / "png", ctx.png_dir)
+        err = _collect_krkr_output(kout, ctx.raw_dir, ctx.png_dir)
         if err:
             st.detail = f"GUI 链路产物落盘失败：{err}"
             st.data["move_error"] = err
