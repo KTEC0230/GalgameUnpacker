@@ -25,6 +25,7 @@ from pathlib import Path
 
 import _xp3_carve
 import toolbridge as tb
+from organize import VIEW_MARK, VIEW_NAME  # 分类视图的名字/标记，organize.py 是唯一出处
 
 user32 = ctypes.windll.user32
 kernel32 = ctypes.windll.kernel32
@@ -1213,6 +1214,81 @@ def _run_inject(stage, stage_exe, args, only):
     return per_archive, False
 
 
+# ---- stage 构建（2026-11-08 速度优化：跳过游戏根下的非引擎目录）----
+#: 游戏根下这些是我们自己的解包产物，不参与注入提取：output*（GUI 默认 <游戏>\output、
+#: 自定的 output11 / output_fullauto3 等都是这个前缀）与 organize 的分类视图。
+#: 真机实测（教师催眠2）stage 曾把 output* 整树 copy2 一遍：单轮 ~15GB、多花 2-5 分钟。
+STAGE_SKIP_OUTPUT_PREFIX = "output"
+
+
+def _stage_skip_reason(name: str, has_view_mark: bool) -> str | None:
+    """游戏根首层目录要不要在 staging 里跳过；返回原因，None=不跳过。"""
+    if name.lower().startswith(STAGE_SKIP_OUTPUT_PREFIX):
+        return "解包产物目录（output*）"
+    if name == VIEW_NAME:
+        return "分类视图目录"
+    if has_view_mark:
+        return "分类视图目录（%s 标记）" % VIEW_MARK
+    return None
+
+
+def _stage_skip_scan(game_dir: str) -> list[tuple[str, int, str]]:
+    """扫游戏根一层，返回 staging 要跳过的目录 [(名, 文件数, 原因)]（按名排序）。
+
+    只看首层：产物目录是我们自己写的，引擎数据不会藏在里面；plugin/*.tpm 等
+    引擎必需文件照旧复制。文件数只是给日志看的规模参考，数不出来记 -1。
+    """
+    out: list[tuple[str, int, str]] = []
+    try:
+        entries = sorted(os.listdir(game_dir))
+    except OSError:
+        return out
+    for name in entries:
+        path = os.path.join(game_dir, name)
+        if not os.path.isdir(path):
+            continue
+        reason = _stage_skip_reason(
+            name, os.path.isfile(os.path.join(path, VIEW_MARK)))
+        if reason is None:
+            continue
+        try:
+            total, _by_ext, _size = count_files(path)
+        except OSError:
+            total = -1
+        out.append((name, total, reason))
+    return out
+
+
+def _build_stage_tree(game_dir: str, stage: str) -> list[tuple[str, int, str]]:
+    """把游戏目录装进 stage：*.xp3 硬链接零拷贝、其余文件 copy2，主程序固定为 game.exe。
+
+    返回跳过的非引擎目录明细（调用方打日志）。游戏根首层命中 `_stage_skip_reason`
+    的目录整棵不进 stage。
+    """
+    skipped = _stage_skip_scan(game_dir)
+    skip_names = {name for name, _n, _r in skipped}
+    exes = [f for f in os.listdir(game_dir) if f.lower().endswith(".exe") and "krkr" not in f.lower()]
+    assert len(exes) == 1, "expected 1 game exe, got %r" % exes
+    for dirpath, dirnames, filenames in os.walk(game_dir):
+        if os.path.normcase(dirpath) == os.path.normcase(game_dir):
+            # 只在首层剪枝（topdown 默认，改 dirnames 生效），产物目录整棵不进 stage
+            dirnames[:] = [d for d in dirnames if d not in skip_names]
+        for fn in filenames:
+            src = os.path.join(dirpath, fn)
+            dst = os.path.join(stage, os.path.relpath(src, game_dir))
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            if fn.lower().endswith(".xp3"):
+                try:
+                    os.link(src, dst)
+                except OSError:
+                    shutil.copy2(src, dst)
+            else:
+                shutil.copy2(src, dst)
+    # 主程序固定为 game.exe（原 exe 已随上面复制，再覆盖一份确保存在）
+    shutil.copy2(os.path.join(game_dir, exes[0]), os.path.join(stage, "game.exe"))
+    return skipped
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("game_dir")
@@ -1244,24 +1320,10 @@ def main(argv: list[str] | None = None) -> int:
             return 3
         time.sleep(0.5)
         os.makedirs(stage, exist_ok=True)
-        exes = [f for f in os.listdir(game_dir) if f.lower().endswith(".exe") and "krkr" not in f.lower()]
-        assert len(exes) == 1, "expected 1 game exe, got %r" % exes
-        for dirpath, dirnames, filenames in os.walk(game_dir):
-            for fn in filenames:
-                src = os.path.join(dirpath, fn)
-                rel = os.path.relpath(src, game_dir)
-                dst = os.path.join(stage, rel)
-                if fn.lower().endswith(".xp3"):
-                    os.makedirs(os.path.dirname(dst), exist_ok=True)
-                    try:
-                        os.link(src, dst)
-                    except OSError:
-                        shutil.copy2(src, dst)
-                else:
-                    os.makedirs(os.path.dirname(dst), exist_ok=True)
-                    shutil.copy2(src, dst)
-        # 主程序固定为 game.exe（原 exe 已随上面复制，再覆盖一份确保存在）
-        shutil.copy2(os.path.join(game_dir, exes[0]), os.path.join(stage, "game.exe"))
+        skipped = _build_stage_tree(game_dir, stage)
+        for name, n, reason in skipped:
+            log("stage skip: %s（%s 个文件）—— %s，不参与注入提取"
+                % (name, n if n >= 0 else "未知", reason))
         for fn in ("KrkrExtract.Lite.exe", "KrkrExtract.Core.dll", "KrkrExtract.UI.Lite.dll"):
             shutil.copy2(os.path.join(krkr_tool_dir(), fn), os.path.join(stage, fn))
         log("stage ready: %s" % stage)
