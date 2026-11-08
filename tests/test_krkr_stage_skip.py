@@ -68,11 +68,12 @@ def test_build_stage_tree_skips_products_keeps_engine(tmp_path):
     stage = tmp_path / "stage"
     stage.mkdir()
 
-    skipped = k._build_stage_tree(str(game), str(stage))
+    skipped, exe_name = k._build_stage_tree(str(game), str(stage))
 
     assert {name for name, _n, _r in skipped} == {"output", "分类"}
-    assert (stage / "game.exe").read_bytes() == b"MZ-fake"
-    assert (stage / "katei2.exe").is_file()          # 原 exe 照旧复制
+    assert exe_name == "katei2.exe", "主程序保留原名（exe 名校验型补丁会判改名致死）"
+    assert (stage / "katei2.exe").read_bytes() == b"MZ-fake"
+    assert not (stage / "game.exe").exists(), "不再额外改名复制一份 game.exe"
     assert (stage / "data.xp3").is_file()
     assert (stage / "plugin" / "foo.tpm").is_file()
     assert not (stage / "output").exists()
@@ -100,3 +101,19 @@ def test_build_stage_tree_requires_single_game_exe(tmp_path):
     stage.mkdir()
     with pytest.raises(AssertionError):
         k._build_stage_tree(str(game), str(stage))
+
+
+def test_build_stage_tree_ignores_uninstaller_exes(tmp_path):
+    """安装器版游戏目录里的 unins000.exe（Inno）不是游戏主程序（2026-11-08 aniyome 真机）。"""
+    game = tmp_path / "game"
+    _mk(game / "aniyome.exe", b"MZ-game")
+    _mk(game / "unins000.exe", b"MZ-unins")
+    _mk(game / "data.xp3", b"XP3")
+    stage = tmp_path / "stage"
+    stage.mkdir()
+
+    _skipped, exe_name = k._build_stage_tree(str(game), str(stage))
+
+    assert exe_name == "aniyome.exe"
+    assert (stage / "aniyome.exe").read_bytes() == b"MZ-game"
+    assert (stage / "unins000.exe").is_file(), "卸载器照旧复制进 stage，只是不参与主程序断言"

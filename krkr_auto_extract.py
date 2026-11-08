@@ -1318,15 +1318,21 @@ def _stage_skip_scan(game_dir: str) -> list[tuple[str, int, str]]:
     return out
 
 
-def _build_stage_tree(game_dir: str, stage: str) -> list[tuple[str, int, str]]:
-    """把游戏目录装进 stage：*.xp3 硬链接零拷贝、其余文件 copy2，主程序固定为 game.exe。
+def _build_stage_tree(game_dir: str, stage: str) -> tuple[list[tuple[str, int, str]], str]:
+    """把游戏目录装进 stage：*.xp3 硬链接零拷贝、其余文件 copy2。
 
-    返回跳过的非引擎目录明细（调用方打日志）。游戏根首层命中 `_stage_skip_reason`
-    的目录整棵不进 stage。
+    返回 ``(跳过的非引擎目录明细, 主程序 exe 名)``。**主程序保留原名**——
+    2026-11-08 aniyome 真机实证：有的补丁 exe 会校验自己的文件名，改名成
+    game.exe 直接「发生了致命的错误。」（教师催眠2/堕落妻子不校验，改名跑了
+    一年才暴露）。游戏根首层命中 `_stage_skip_reason` 的目录整棵不进 stage。
     """
     skipped = _stage_skip_scan(game_dir)
     skip_names = {name for name, _n, _r in skipped}
-    exes = [f for f in os.listdir(game_dir) if f.lower().endswith(".exe") and "krkr" not in f.lower()]
+    # 游戏主程序：排除 krkr 工具与安装器卸载器（unins000.exe 是 Inno、un.exe 是 NSIS；
+    # 2026-11-08 aniyome 真机：安装器版游戏目录里躺着 unins000.exe，旧断言直接判死）
+    exes = [f for f in os.listdir(game_dir) if f.lower().endswith(".exe")
+            and "krkr" not in f.lower()
+            and not f.lower().startswith(("unins", "uninstall"))]
     assert len(exes) == 1, "expected 1 game exe, got %r" % exes
     for dirpath, dirnames, filenames in os.walk(game_dir):
         if os.path.normcase(dirpath) == os.path.normcase(game_dir):
@@ -1343,9 +1349,7 @@ def _build_stage_tree(game_dir: str, stage: str) -> list[tuple[str, int, str]]:
                     shutil.copy2(src, dst)
             else:
                 shutil.copy2(src, dst)
-    # 主程序固定为 game.exe（原 exe 已随上面复制，再覆盖一份确保存在）
-    shutil.copy2(os.path.join(game_dir, exes[0]), os.path.join(stage, "game.exe"))
-    return skipped
+    return skipped, exes[0]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1363,15 +1367,29 @@ def main(argv: list[str] | None = None) -> int:
     only = [s.strip().lower() for s in args.only.split(",")] if args.only else None
 
     # ---- 1. stage ----
-    # 复制除 *.xp3 外的所有文件（plugin/*.tpm、*.cf 等引擎必需），xp3 用硬链接零拷贝
+    # 复制除 *.xp3 外的所有文件（plugin/*.tpm、*.cf 等引擎必需），xp3 用硬链接零拷贝。
+    # 主程序**保留原名**（2026-11-08 aniyome：改名 game.exe 会被 exe 名校验型补丁判死），
+    # 身份记录在 game_exe.txt；缺文件时回退旧约定的 game.exe（兼容旧 stage）。
     stage = os.path.join(STAGE_ROOT, "auto")
-    stage_exe = os.path.join(stage, "game.exe")     # 本链路唯一认的「游戏进程」身份
-    if args.reuse_stage and os.path.isdir(stage) and os.path.isfile(stage_exe):
-        log("reusing existing stage: %s" % stage)
+
+    def _stage_exe_of(stage_dir):
+        gtxt = os.path.join(stage_dir, "game_exe.txt")
+        if os.path.isfile(gtxt):
+            with open(gtxt, encoding="utf-8") as f:
+                name = f.read().strip()
+            if name and os.path.isfile(os.path.join(stage_dir, name)):
+                return os.path.join(stage_dir, name)
+        legacy = os.path.join(stage_dir, "game.exe")
+        return legacy if os.path.isfile(legacy) else None
+
+    stage_exe = _stage_exe_of(stage)
+    if args.reuse_stage and os.path.isdir(stage) and stage_exe:
+        log("reusing existing stage: %s（主程序 %s）" % (stage, os.path.basename(stage_exe)))
     else:
-        for p in pids_by_exe_path(stage_exe):
-            subprocess.run(["taskkill", "/F", "/PID", str(p)], capture_output=True)
-            time.sleep(0.5)
+        if stage_exe:
+            for p in pids_by_exe_path(stage_exe):
+                subprocess.run(["taskkill", "/F", "/PID", str(p)], capture_output=True)
+                time.sleep(0.5)
         if os.path.isdir(stage) and not tb.drop_tree(stage):
             # 清不掉就明确失败，别硬往下走：残留的旧 stage 里有上一次的 xp3 硬链接，
             # 复制/硬链接混进去后 KrkrExtract 会拖错包，产物对不上索引，比直接报错难查得多。
@@ -1379,13 +1397,16 @@ def main(argv: list[str] | None = None) -> int:
             return 3
         time.sleep(0.5)
         os.makedirs(stage, exist_ok=True)
-        skipped = _build_stage_tree(game_dir, stage)
+        skipped, exe_name = _build_stage_tree(game_dir, stage)
         for name, n, reason in skipped:
             log("stage skip: %s（%s 个文件）—— %s，不参与注入提取"
                 % (name, n if n >= 0 else "未知", reason))
+        with open(os.path.join(stage, "game_exe.txt"), "w", encoding="utf-8") as f:
+            f.write(exe_name + "\n")
+        stage_exe = os.path.join(stage, exe_name)
         for fn in ("KrkrExtract.Lite.exe", "KrkrExtract.Core.dll", "KrkrExtract.UI.Lite.dll"):
             shutil.copy2(os.path.join(krkr_tool_dir(), fn), os.path.join(stage, fn))
-        log("stage ready: %s" % stage)
+        log("stage ready: %s（主程序 %s）" % (stage, exe_name))
 
     # ---- 2. 注入启动 ----
     # ⚠️ 2026-11-08 两条真机教训都进了机制：

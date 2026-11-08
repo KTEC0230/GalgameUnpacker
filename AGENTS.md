@@ -2190,3 +2190,17 @@ output_fullauto1/2 已删）。完整证据在 verified-findings §36，这里�
 音频 2168/2168 零失败，媒体 251.0 分钟，organize 3494 硬链接 0 失败。泛化清单：
 教师催眠2（GUI 链）、堕落妻子（GUI 链）、温泉蒸汽人妻（静态链）三个真机样本。
 manifest 同在 `D:\GalgameOutput\温泉蒸汽人妻\manifest.json`。
+
+### 2026-11-08 深夜追加：aniyome 两轮新坑（bugfix9/10 已修，注入兼容性待深挖）
+
+- **坑 4（bugfix9 修）**：安装器版游戏目录躺着 unins000.exe，单 exe 断言判死 →
+  主程序过滤排除 unins*/uninstall* 前缀。
+- **坑 5（bugfix10 修）★重要★**：**有的补丁 exe 校验自己的文件名**——stage 主程序
+  改名 game.exe 后游戏秒弹「发生了致命的错误。」（裸跑对照实验实锤：原名
+  aniyome.exe 正常启动、改名即死；教师催眠2/堕落妻子不校验所以一年没暴露）。
+  修复：stage 主程序**保留原名**，身份记入 stage/game_exe.txt（缺省回退旧约定
+  game.exe 兼容旧 stage）。
+- **遗留（未解）**：游戏正常启动后 KrkrExtract 注入 UI 仍不出现（11 个顶层窗口全是
+  游戏的）——疑似 AI 翻译补丁（exe 水印「By 朝比奈真冬 模型：gemini-3-flash-preview」）
+  与注入器冲突。**当前出路 = 3 分钟人工拖**（manual.log 已给全步骤），将来想自动化
+  需要专门逆向翻译补丁的钩子。
