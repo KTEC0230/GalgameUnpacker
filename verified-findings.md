@@ -2745,3 +2745,41 @@ GUI 自动化的每一侧（源点、终点、Z 序、布局）都要显式安�
 ② 失败路径的清理必须放 finally，异常路径泄漏的进程会在**下一次部署**时变成
 莫名其妙的 Permission denied；③ `ensure_drop_point` 的富诊断（38.2 现场）
 让第二轮失败 30 秒定位——11-06 那轮补的诊断值回票价。
+
+## 39. Unity AudioClip 同名去重口径（2026-11-08 深夜，bugfix11）——「收齐了」被判「缺一半」
+
+### 现场量化（`Sweet Succubus Home`，2022.3.62f2 Mono + Addressables）
+
+| 口径 | 数值 | 来源 |
+|---|---|---|
+| ByType JSON（单遍） | AudioClip **1782** | `expected_counts()` |
+| 逐条枚举（两遍） | **3458 条**（含同名重复） | `_as_audio_collect2.enumerate_names` |
+| **去重名字** | **1782 个** | `len(set(names))` |
+| 收集器按名字补齐 | **1782/1782，缺 0** | extract.log「本轮 +26，累计 1782，仍缺 0」 |
+| 落盘 .wav | 1782 | `glob("*.wav")` |
+| 旧对账期望 | 3458（以逐条为准） | 旧代码 `audio_exp = len(names)` |
+| 旧对账结论 | diff=-1676 → **rc=1 假失败** | 「AudioClip：枚举 3458 vs 落盘 1782」 |
+
+逐类实证（重跑 `expected_counts` 探针）：Texture2D **709 期望 / 702 落盘**（差 7 =
+1.0%，2%/20 闸门内，引用型资产 Convert 不导出——My Wife 的 5 缺口同源）、
+Sprite **1012/1012 分毫不差**、AudioClip **1782/1782**。三个类的交付全部正确，
+唯一错误在**对账期望的口径**：「以逐条为准」这条规则当年是为「ByType 少数」设计的
+（My Wife：逐条 > ByType 且名字唯一），它没考虑**同名重复**——同名资产导出时互相
+覆盖，磁盘上只可能有「去重名字数」个文件，拿条目数当期望在数学上就不可能对上。
+
+### 修复与语义
+
+`orchestrator.py` 音频段：`names = sorted(set(names))` 后再当期望与收集目标，
+同名重复显式打日志（「逐条 3458 条含同名重复，去重后 1782 个名字；对账按去重
+名字数」）。**期望/收集/落盘三者同一份地面真相（名字清单）**——这正是 AGENTS
+「地面真相是名字清单，不是文件数」教训的完整落地：那次说的是「别拿文件数当真」，
+这次补上「也别拿条目数当真」。
+
+### 结果
+
+第二轮 rc=0（1243.6s）：图片 1714/1714、音频 1782/1782 零失败，媒体 216.8 分钟；
+manifest 对账行 `diff=-7 —— Texture2D 引用型资产 Convert 不导出（702/709，
+缺口在阈值内）`——缺口被显式解释而非吞掉（A3 红线不动的样子）。**Unity 链路
+第 3 个真机样本、第 1 个 Addressables（StreamingAssets/aa）形态**。
+回归：`test_unity_audio_expectation_dedupes_same_name_entries`（3 条 2 名 →
+期望 6 而非 7）；全量 `tests=846 / 0 / 0 → PASS`。

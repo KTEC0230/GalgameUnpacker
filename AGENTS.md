@@ -21,91 +21,74 @@
 
 > **2026-11-02 测试反馈**：随包 GARbro 的 .NET 插件加载修复仅适用于可信工具目录；Unity 样本的音频收集未对账通过，KiriKiri 索引兜底已用真实注入新索引和模拟窗口缺失提取 2562 条，自然窗口缺失尚未复现。案例索引已保留旧案例并加入 Toshiue。实测和限制见 `verified-findings.md`。
 
-> **📌 当前状态（2026-11-08 03:0x，★krkr 链路真机闭环达成★：bugfix5 部署标准路径，`教师催眠2` 全自动 rc=0、三媒体零失败，数字与人工闭环一致）**
-> - **交付**：`packaging/Output/GalgameUnpacker-0.8.2-portable.zip`（148,528,606 B / 141.7 MiB，
->   SHA256 `687f4cd3…f26de05e983d`），已发布到 GitHub Release **`v0.8.2`**
->   <https://github.com/KTEC1200/game-get/releases/tag/v0.8.2>（仅 1 个附件，asset `717312891`）。
->   **本轮不改 Release 附件、不动 `version.py` / README。**
-> - **✅ 当前本地包 bugfix8（用这个，已部署标准路径，2026-11-08 深夜）**：
->   `packaging/Output/GalgameUnpacker-0.8.2-bugfix8-portable.zip`
->   （141.9 MiB，SHA256 `b45c0dd6…72258d`），BUILD_INFO 标 `bugfix8`；
->   内容 = **krkr 拖拽源头三处加固**（`_find_item_point` 扫条目矩形 + Explorer
->   TOPMOST 抬窗与固定摆放 `EXPLORER_PLACE` + 收尾清理改 finally 防进程泄漏），
->   全部经 `堕落妻子` 真机闭环实证（待办 4 泛化第一个新样本，rc=0 零失败）。
-> - **历史本地包 bugfix7（产物出库 GalgameOutput，2026-11-08 晚）**：
->   `packaging/Output/GalgameUnpacker-0.8.2-bugfix7-portable.zip`
->   （141.9 MiB，SHA256 `cf1f81af…f89ed81`），BUILD_INFO 标 `bugfix7`；
->   内容 = **GUI 默认产物出库**：`<游戏所在盘>\GalgameOutput\<游戏名>`，不进游戏库
->   （2026-11-08 用户定调）。校验与部署自检全过，旧 bugfix6 部署目录已删（zip 有档）。
-> - **历史本地包 bugfix6（stage 速度优化，2026-11-08 晚）**：
->   `packaging/Output/GalgameUnpacker-0.8.2-bugfix6-portable.zip`
->   （141.7 MiB，SHA256 `0d763516…ea3505a72`），BUILD_INFO 标 `bugfix6` / 提交 `12aaf32`；
->   内容 = **stage 跳过游戏根下 output*/分类 非引擎目录**（速度优化，单轮省 ~15GB 复制）
->   + BUILD_INFO 模板去过时文案。校验 testzip/README/exe-SHA/CArchiveReader 全过。
->   **标准路径 `D:\GalgameUnpacker\orchestrator`**（旧包改名
->   `orchestrator_prev_bugfix5` 保留，不需要可自行删）。
->   部署自检 doctor / gui-smoke / 冻结 dry-run（教师催眠2）全过。
-> - **历史本地包 bugfix5（krkr 真机闭环包，2026-11-08 03:0x）**：
->   `packaging/Output/GalgameUnpacker-0.8.2-bugfix5-portable.zip`
->   （141.7 MiB，SHA256 `12d472fe…4dfd9b`），BUILD_INFO 标 `bugfix5` / 提交 `c286fe6`；
->   README 125 行逐字相同、exe 三处同 SHA、CArchiveReader 实证
->   `krkr_auto_extract.NO_AUTO_DISMISS` 进包。
->   本轮内容：krkr 死因修复
->   （`NO_AUTO_DISMISS` 默认开）+ 收货布局修复（`_collect_krkr_output`）+
->   `KRKR_STAGE_ROOT` env + dismiss 弹窗正文日志埋点。
->   **GUI 真机启动已验证（11-07 18:4x）**；11-07 18:06 两次双击闪退
->   （tcl86t.dll `0x80000003`）是火绒卡死时段窗口站瘫痪的连带伤害，重启后无新崩溃。
-> - **历史包**：已发布 0.8.2 / dropfix1 / bugfix1 三个 zip 均**未改动、未覆盖**，留作对照；
->   `build_exe.py --tag` 对同名 zip 一律拒绝覆盖。
-> - **✅ 用户数据已恢复（00:40）**：`D:\HY\教师催眠2\output` 的 `raw/`(7070) 与 `png/`(2748)
->   共 **9818 个交付文件**由 `分类/` 视图硬链接重建，`--check --sample 8` 8/8 通过、rc=0；
->   视图 9818 文件 / 4.4 GiB 原样保留。2748 个 `.tlg`/`.pna` 中间格式**无法还原**（PNG 成品完整）。
-> - **✅ 15:07 / 15:22 两轮真机失败已定位并修复**（详见文末「16:01 WinForms 根因与 bugfix2」）：
->   不是落点遮挡/加密/桌面独占问题，是 `KrkrExtract.Lite.exe` 为 .NET WinForms，主窗口类名
->   不是 `#32770`、按钮不是标准 `Button`，旧判据把控件全过滤空。已改按 pid+标题认主窗口、
->   按文本归一化认按钮、点击后 `BM_GETCHECK` 复核、UIA Invoke/Toggle/鼠标点击兜底、
->   失败日志带原始顶层窗口清单；顺带修报错重复拼贴与 `验收[skipped] None/None失败` 显示。
-> - **源码状态**：`b22174a`（WinForms 修复）→ `1d9be66`（文档）→ `2001f62`（GUI 启动兜底）
->   → `877f28f`（文档），全部已推 `game-get/master`；**`2001f62` 已随 bugfix3 进部署包**。
->   21:0x 健康会话（重启后）全量 `tests=822 / 0 failures / 0 errors / 11 skipped → PASS`、
->   golden 零漂移、工作树干净——17:55 那个「连 import tkinter 都崩」的后台会话已随重启消失，
->   PyInstaller 的 Tk 探测一次过。包内 BUILD_INFO 记的提交号是**打包那一刻**的 HEAD；
+> **📌 当前状态（2026-11-08 深夜收口，★今日战果：bugfix6→11 六个包、4 部游戏真机闭环、8 个真机缺口修复★）**
+> - **交付**：GitHub Release **`v0.8.2`**（`687f4cd3…f26de05e983d`，asset `717312891`）**原样未动**；
+>   本地迭代全部走 `--tag` 本地包（下方 bugfix5→11），`version.py` / README 只改过
+>   产物位置一行（契约测试锁着版本与包名）。
+> - **✅ 当前本地包 bugfix11（用这个，已部署标准路径 `D:\GalgameUnpacker\orchestrator`，2026-11-08 深夜）**：
+>   `packaging/Output/GalgameUnpacker-0.8.2-bugfix11-portable.zip`（141.9 MiB，
+>   SHA256 `b848160b…cfc43de`）。**本轮内容：Unity AudioClip 对账期望去重同名条目**
+>   （`Sweet Succubus Home` 真机：逐条 3458 条含同名、去重 1782 名，收集器全收齐却被旧口径
+>   判「缺一半」的假失败；修复后期望/落盘/收集三者口径归一，rc=0）。
+> - **今日本地包沿革（全部留档在 `packaging/Output/`，同名 zip 拒绝覆盖）**：
+>   `bugfix6` stage 跳过游戏根下 output*/分类 非引擎目录（速度优化，单轮省 ~15GB）→
+>   `bugfix7` GUI 默认产物出库 `<游戏所在盘>\GalgameOutput\<游戏名>`（不进游戏库，用户定调）→
+>   `bugfix8` krkr 拖拽源头三处加固（`_find_item_point` 扫条目矩形 + Explorer TOPMOST 抬窗
+>   与 `EXPLORER_PLACE` 固定摆放 + 收尾清理改 finally 防进程泄漏）→
+>   `bugfix9` 主程序过滤排除安装器卸载器（unins*/uninstall*）→
+>   `bugfix10` **stage 主程序保留原名**（exe 名校验型补丁改名即死，身份记 `game_exe.txt`）→
+>   `bugfix11` Unity 音频去重口径。每个包 doctor / gui-smoke 自检全过后才替换部署。
+> - **今日真机闭环 4 部（+11-08 凌晨的教师催眠2，泛化与口径全线推进）**：
+>   | 游戏 | 链路 | 结果 |
+>   |---|---|---|
+>   | 教师催眠2（11 包 krkrZ） | GUI 全自动 | rc=0，三媒体零失败（03:0x，待办 3） |
+>   | 堕落妻子（2 包 krkrZ） | GUI 全自动 | rc=0，图片 1626/音频 2320 零失败（10 分钟） |
+>   | 温泉蒸汽人妻（3 包） | **静态 garbro**（自动选链） | rc=0，3494 条目对账 0 差（4.5 分钟） |
+>   | Sweet Succubus Home（Unity+Addressables） | Unity 链 | rc=0，图片 1714/音频 1782 零失败（20.7 分钟） |
+>   产物全部落 **`D:\GalgameOutput\<游戏名>`**（新出库布局）。
+> - **未闭环 / 遗留**：
+>   ① **aniyome（11 包）**：三轮修掉 unins000.exe 断言与 exe 名校验两个坑后游戏能正常
+>   启动，但 **KrkrExtract 注入 UI 不出现**——疑似 AI 翻译补丁（exe 水印
+>   「By 朝比奈真冬 模型：gemini-3-flash-preview」）与注入器冲突，需专门逆向回合；
+>   **当前出路 = 3 分钟人工拖**（步骤在 `D:\GalgameOutput\aniyome\_work\manual.log`，
+>   拖完 `--reuse-raw` 收尾）。
+>   ② D:\K\deepseek 根上两条非继承 DENY ACE 来源未查明（不阻塞；规矩：别在这棵树里跑 exe）。
+> - **源码状态**：HEAD `906b81a` 已推 `game-get/master`，工作树干净；
+>   基线 **tests=846 / 0 failures / 0 errors**（skip 随环境波动 16~20）+ golden
+>   8 fixture + 12 真实样本零漂移。包内 BUILD_INFO 记的提交号是打包那一刻的 HEAD；
 >   最新提交号以 `git log -1` 为准。**提交一律显式 add，禁用 `git add -A`。**
-> - **真机 `--allow-gui` 全自动已闭环（11-08 03:0x，待办 3 ✅）**；当前未闭环项：
->   Full Unpack 泛化（只对教师催眠2 验证过，待办 4）、案例库扩容（待办 5）。
-> - **能力面**：9 条引擎链路可用；加密 KiriKiri 需 `--allow-gui`（要真实桌面）或人工拖拽 +
->   `--reuse-raw` 收尾。其余引擎判得出但无链路（退出码 2）。
+> - **能力面**：10 条引擎链路可用（含 Artemis）；加密 KiriKiri 需 `--allow-gui`
+>   （真实桌面）或人工拖拽 + `--reuse-raw` 收尾；其余引擎判得出但无链路（退出码 2）。
 >
-> **📋 待办（按优先级，2026-11-07 17:55 重排）**
-> 1. ~~双击确认 GUI 能起来~~ **✅ 2026-11-07 18:4x 验证通过**（重启后健康会话：
->    ShellExecute 拉起 + 进程/窗口/截图三重确认，`--gui-smoke` rc=0）。
-> 2. ~~交互桌面会话恢复后打 bugfix3~~ **✅ 2026-11-07 21:11 构建并部署**：
->    zip SHA256 `66045686…08b39e`，校验/自检全过，标准路径已是 bugfix3。
->    构建一次过，反证 17:55 两次失败纯属旧会话环境。
-> 3. ~~`--allow-gui` 全自动真机闭环~~ **✅ 2026-11-08 03:0x 达成**：`教师催眠2` 全自动
->    rc=0，raw 9821，图片 3082/3082、音频 6558/6558、视频 12/12 零失败，organize
->    硬链接 9821 失败 0 —— 与 v0.7.1 人工闭环逐字一致。死因与修复见文末
->    「2026-11-08 krkr 链路真机死因破案与闭环达成」。
-> 4. `Full Unpack` 是否对所有 KrkrExtract 版本/游戏都有效：目前只对 `教师催眠2` 验证过。
-> 5. 案例库仍只有 12 个 case；新变体照旧要从头逆向。
-> 6. `packaging\Output\orchestrator` 上那两条非标准 ACE（`Everyone …(DENY)(DC)`）来源未查明
->    —— 已确认不影响规避方式（放普通目录即按 High 运行）。
-> 7. **不要加暗色模式**：用户 2026-11-06 明确说不做；界面 token 也刻意保持单套，别留半成品分支。
-> 8. 用户数据现场别再动：别删/改名 `D:\HY\教师催眠2\output\分类`；真要重跑先在副本上试。
+> **📋 待办（按优先级，2026-11-08 深夜重排）**
+> 1. ~~GUI 启动 / bugfix 构建 / `--allow-gui` 真机闭环~~ **✅ 全部达成**（11-07~11-08）。
+> 2. **Full Unpack 泛化继续**（待办 4）：已验 3 部（教师催眠2 / 堕落妻子 = GUI 链，
+>    温泉蒸汽人妻 = 静态链）；aniyome 阻塞于翻译补丁（见上①）；剩余样本
+>    昼下がり×2、Doinaka（9 包）。
+> 3. **Unity 队列 9 部**（新增）：Mono 组 6 部随时可跑（SexCP_069 同版本最稳；
+>    Rebirth Pub / Kaiju Princess 2 是 `data.unity3d` 形态）；**IL2CPP 3 部需先备
+>    Il2CppDumper + AssetStudioNext**（Unity 6000 的 Bunny 只认 AssetStudioNext）。
+> 4. **案例库扩容**（待办 5）+ `build_cases.py --from-manifests` 的 manifest 扫描路径
+>    要对齐新产物家 `D:\GalgameOutput\`（下次动案例库时一起做）。
+> 5. ACE 来源（不阻塞，见上②）。
+> 6. **不要加暗色模式**：用户 2026-11-06 明确说不做。
+> 7. **用户数据现场**：产物新家是 `D:\GalgameOutput\`，**HY 里不再有产物**
+>    （教师催眠2 旧 output 只剩 manifest/_work/类目清单，媒体经用户同意已删）；
+>    真要重跑先在副本上试。
 >
-> **已完成（17:55）**：数据恢复、QA 收口、WinForms 根因修复、bugfix2 新包、
-> 标准路径切换、GUI 启动兜底源码修复、822 项回归。
-> **已完成（21:2x）**：GUI 真机启动验证、bugfix3 构建与标准路径部署、健康会话基线复测。
-> **已完成（11-08 03:0x）**：krkr 真机死因破案与修复、收货布局修复、闭环达成（bugfix5）。
+> **已完成（11-08 深夜收口）**：stage 速度优化、产物出库、krkr 拖拽源头加固×3、
+> 进程泄漏修复、卸载器排除、exe 名校验修复、Unity 音频去重口径、golden 漂移破案与
+> fixture 补位、4 部真机闭环、磁盘清理 ~38GB、bugfix6→11 六包部署。
 
 > **🚀 接手顺序（新会话只做这四步）**
 > ① 读上面「当前状态 / 待办」+ 文末「2026-11-07 真机实跑失败与 BugFix」「接手收口」+「⚠️ 五个坑」；
 >    先跑 `git status` —— **工作树若有未提交改动，先问清是不是修复产物，别当成垃圾清掉**；
 > ② 跑基线：`C:\Python314\python.exe tests\run_all.py`（**不要用裸 `python`**，它没有 pytest；
->    提交后基线 **tests=822 / 0 failures / 0 errors**，skip 9~20 均为环境条件、随环境波动）
->    + `C:\Python314\python.exe tests\make_golden.py --check`（应零漂移）；
-> ③ 用户数据已恢复，别再动 `D:\HY\教师催眠2\output`；标准路径 `D:\GalgameUnpacker\orchestrator`
->    已是 bugfix3，直接用它推进待办 3，真机全链未复现前别声称「可交付」；
+>    提交后基线 **tests=846 / 0 failures / 0 errors**，skip 16~20 均为环境条件、随环境波动）
+>    + `C:\Python314\python.exe tests\make_golden.py --check`（8 fixture + 12 真实样本，应零漂移；
+>    样本会随用户清理磁盘改名/消失——先查盘再查代码，见文末 §36/§37）；
+> ③ 标准路径 `D:\GalgameUnpacker\orchestrator` 已是 **bugfix11**，直接用它推进待办；
+>    产物新家 `D:\GalgameOutput\<游戏名>`（不进游戏库）；aniyome 当前要人工拖（见上①）；
 > ④ **改完先回写本文档 + `verified-findings.md`，再清临时产物，最后显式 add 提交。**
 
 ## 文件索引（按需读，别全读）
