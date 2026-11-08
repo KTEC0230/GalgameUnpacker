@@ -14,8 +14,9 @@
 > 外部工具（GARbro / AssetStudio 等）在 `D:\K\galgame\`，位置见下方「环境」。
 >
 > **📦 版本控制（2026-10-29 建立；2026-11-02 已上传）**：`D:\K\deepseek` 是本地 git 仓库。
-> **远程仓库：`git@github.com:KTEC1200/game-get.git`**（注意拼写是 **game-get**，不是 game-git——
-> GitHub 实际仓库名如此，旧地址靠重定向也能用但别用）。2026-11-02 用户点头后**首次 push**
+> **远程仓库：`git@github.com:KTEC1200/GalgameUnpacker.git`**（2026-11-08 用户把仓库
+> 从 `game-get` 改名为 **GalgameUnpacker**，本地 remote 已 set-url；旧名靠 GitHub
+> 重定向也能用但别再写）。2026-11-02 用户点头后**首次 push**
 > （master 全历史至 `2d64bac`），remote 已建、tracking 已设。
 > `.gitignore` 已排除 `_extracted/`、`packaging/Output/`、`_spike_pkg/dist|build/` 等大产物。
 
@@ -30,7 +31,9 @@
 >   SHA256 `b848160b…cfc43de`）。**本轮内容：Unity AudioClip 对账期望去重同名条目**
 >   （`Sweet Succubus Home` 真机：逐条 3458 条含同名、去重 1782 名，收集器全收齐却被旧口径
 >   判「缺一半」的假失败；修复后期望/落盘/收集三者口径归一，rc=0）。
-> - **今日本地包沿革（全部留档在 `packaging/Output/`，同名 zip 拒绝覆盖）**：
+> - **今日本地包沿革（2026-11-08 用户清理：`packaging/Output/` 只留 **bugfix11 + bugfix10**
+>   两个 zip——更旧的随取随删（`build_exe.py --tag` 可重出），已发布 0.8.2 原件在
+>   GitHub Release 页；同名 zip 拒绝覆盖的护栏不变）**：
 >   `bugfix6` stage 跳过游戏根下 output*/分类 非引擎目录（速度优化，单轮省 ~15GB）→
 >   `bugfix7` GUI 默认产物出库 `<游戏所在盘>\GalgameOutput\<游戏名>`（不进游戏库，用户定调）→
 >   `bugfix8` krkr 拖拽源头三处加固（`_find_item_point` 扫条目矩形 + Explorer TOPMOST 抬窗
@@ -53,7 +56,7 @@
 >   **当前出路 = 3 分钟人工拖**（步骤在 `D:\GalgameOutput\aniyome\_work\manual.log`，
 >   拖完 `--reuse-raw` 收尾）。
 >   ② D:\K\deepseek 根上两条非继承 DENY ACE 来源未查明（不阻塞；规矩：别在这棵树里跑 exe）。
-> - **源码状态**：HEAD `906b81a` 已推 `game-get/master`，工作树干净；
+> - **源码状态**：HEAD `906b81a` 已推 `GalgameUnpacker/master`，工作树干净；
 >   基线 **tests=846 / 0 failures / 0 errors**（skip 随环境波动 16~20）+ golden
 >   8 fixture + 12 真实样本零漂移。包内 BUILD_INFO 记的提交号是打包那一刻的 HEAD；
 >   最新提交号以 `git log -1` 为准。**提交一律显式 add，禁用 `git add -A`。**
@@ -404,7 +407,7 @@ dry-run 命中 rules+cases（case_path 在包内）、extract in-process **1585/
    样本仍在盘（温泉蒸汽人妻 3 包 / 教师催眠2 11 包 / aniyome 11 包 / Doinaka 9 包 /
    pork社另有 パート妻の情事・堕落妻子・昼下がり×2），将来想跑随时说。
 2. ~~E-mote 搭车项~~ **跟着挂起**（盘面 0 命中；将来跑 KiriKiri 样本时留意 .pimg/.psb）。
-3. ~~远程上传~~ ✅ **已完成（2026-11-02）**：master 全历史 → `KTEC1200/game-get`。
+3. ~~远程上传~~ ✅ **已完成（2026-11-02）**：master 全历史 → `KTEC1200/GalgameUnpacker`。
 4. 搁置不变（需用户配合）：~~夕凪荘 22 BGM 内存 dump~~（**用户 2026-11-04 明确舍弃，不再做**）、
    GUI 弹窗行为确认（见下方说明）。
 5. 最后才考虑：AI 兜底（A1/A2/A3）。
@@ -1744,7 +1747,7 @@ C:\Python314\python.exe tools\restore_from_view.py --out "D:\HY\教师催眠2\ou
 
 `tests/run_all.py` → **808 / 0 failures / 0 errors / 10 skipped → PASS**（基线 800 + 新增 8：
 manual 3 + reuse 3 + build_exe 2）；`make_golden.py --check` 零漂移。3 次提交均已推送
-`game-get/master`：`9aabbca`（12 文件：4 项根因修复 + 恢复工具 + QA 契约 + 文档）、
+`GalgameUnpacker/master`：`9aabbca`（12 文件：4 项根因修复 + 恢复工具 + QA 契约 + 文档）、
 `3ca1045`（`build_exe.py --tag` 护栏 + 2 测试）、`22495fd`（BUILD_INFO 去掉硬编码测试数），
 其后是文档回写提交（见 `git log`）。
 **始终显式 add，没有用 `git add -A`，也没有删任何文件。**
