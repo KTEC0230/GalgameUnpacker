@@ -1798,6 +1798,78 @@ def test_unity_data_dir_returns_none_without_data(tmp_path):
     assert orch._unity_data_dir(game) is None
 
 
+# ---------------------------------------------------------------------------
+# Unity StreamingAssets 散装视频（2026-11-08 SexCP_069 真机缺口）
+# ---------------------------------------------------------------------------
+
+def test_unity_loose_videos_scans_streaming_assets(tmp_path):
+    """★核心★ StreamingAssets 里的裸视频按扩展名收齐（含子目录），非媒体不收。"""
+    data = tmp_path / "My Game_Data"
+    sa = data / "StreamingAssets"
+    (sa / "aa" / "bundles").mkdir(parents=True)
+    (sa / "sub").mkdir()
+    (sa / "intro.mp4").write_bytes(b"MP4")
+    (sa / "sub" / "out.WEBM").write_bytes(b"WEBM")     # 大写后缀也要认
+    (sa / "aa" / "bundles" / "cat.bundle").write_bytes(b"BUNDLE")
+    (sa / "notes.txt").write_bytes(b"TXT")
+    (sa / "catalog.json").write_bytes(b"{}")
+
+    got = orch._unity_loose_videos(data)
+
+    assert [(p.name, str(rel)) for p, rel in got] == [
+        ("intro.mp4", "Video\\intro.mp4"),
+        ("out.WEBM", "Video\\sub\\out.WEBM"),
+    ]
+
+
+def test_unity_loose_videos_empty_without_streaming_assets(tmp_path):
+    data = tmp_path / "My Game_Data"
+    data.mkdir()
+    assert orch._unity_loose_videos(data) == []
+
+
+def test_unity_stage_collects_loose_videos(tmp_path, monkeypatch):
+    """★2026-11-08 SexCP_069★ 散装视频必须进 raw/Video/ 且计入期望与对账——
+    旧链路只认资产（Texture2D/Sprite/AudioClip），裸 mp4 被静默漏交付，
+    全链「成功」却视频永远 0/0（坑 3 的镜像面：AssetStudio 不枚举文件系统）。"""
+    game = tmp_path / "My Game"
+    data = game / "My Game_Data"
+    sa = data / "StreamingAssets"
+    sa.mkdir(parents=True)
+    (sa / "interlude.mp4").write_bytes(b"FAKE-MP4")
+    ctx = _ctx(tmp_path, game_dir=game)
+
+    def fake_run(cmd, **kw):
+        if "--export_type" in cmd and "JSON" in cmd:
+            json_dir = Path(cmd[2])
+            json_dir.mkdir(parents=True, exist_ok=True)
+            for i in range(2):
+                (json_dir / f"asset_{i}.json").write_text("{}")
+        if "--export_type" in cmd and "Convert" in cmd:
+            conv_dir = Path(cmd[2])
+            conv_dir.mkdir(parents=True, exist_ok=True)
+            sub = conv_dir / cmd[5]
+            sub.mkdir(parents=True, exist_ok=True)
+            for i in range(2):
+                (sub / f"asset_{i}.png").write_text("x")
+        import subprocess
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr("subprocess.run", fake_run)
+    monkeypatch.setattr(orch.tb, "find_tool", lambda key: Path("/fake/assetstudio.exe"))
+    _stub_audio_enum(monkeypatch, names=("clip_a", "clip_b"))
+
+    st = orch.stage_extract_unity(ctx)
+
+    assert st.ok is True
+    assert (ctx.raw_dir / "Video" / "interlude.mp4").read_bytes() == b"FAKE-MP4"
+    assert st.data["expected_total"] == 7, "JSON 6 + 散装视频 1"
+    assert st.data["actual_total"] == 7
+    assert st.data["json_total"] == 6, "json_total 保持纯 JSON 口径"
+    loose_rows = [a for a in st.data["archives"] if "散装" in str(a.get("archive"))]
+    assert loose_rows and loose_rows[0]["expected"] == 1 and loose_rows[0]["got"] == 1
+
+
 def test_unity_extract_reconciles_json_vs_convert(tmp_path, monkeypatch):
     """Unity 链路：JSON 枚举计数 vs Convert 导出文件数。"""
     # 造 _Data 目录

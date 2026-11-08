@@ -2783,3 +2783,94 @@ manifest 对账行 `diff=-7 —— Texture2D 引用型资产 Convert 不导出�
 第 3 个真机样本、第 1 个 Addressables（StreamingAssets/aa）形态**。
 回归：`test_unity_audio_expectation_dedupes_same_name_entries`（3 条 2 名 →
 期望 6 而非 7）；全量 `tests=846 / 0 / 0 → PASS`。
+
+## 40. Unity 队列开跑：SexCP_069 / The Neighbor's Wife 闭环 + StreamingAssets 散装视频缺口（2026-11-08 深夜）
+
+### 背景
+
+bugfix11 收口后用户转向 Unity 部分待办 3（盘上 9 部全新样本，按风险分层）。
+本会话环境事实：**标准部署 `D:\GalgameUnpacker\` 整个目录已被用户清盘删除**，
+源码态（HEAD = bugfix11 同一代码，基线 tests=846 全绿 + golden 零漂移）直接推进，
+产物照旧落 `D:\GalgameOutput\<游戏名>`。外部工具 AssetStudio.CLI 在位不受影响。
+
+### 队列侦察（6 部 Mono 组版本/形态实测）
+
+| 游戏 | Unity 版本 | 形态 | 判定 |
+|---|---|---|---|
+| SexCP_069 | 2022.3.62f2 | 经典 + Addressables（1683 bundle） | 135 分 |
+| The Neighbor's Wife | 2021.3.5f1 | 经典 + Addressables（数据目录名 `Kinjo no Hitozuma_Data`，与目录名不同） | 135 分 |
+| Summer Clover | 2020.3.48f1 | **嵌套布局**：真实游戏根是 `Summer Clover\SummerClover\`（内层），外层判定只有 30 分未达阈值——**用内层目录作 game_dir 即 135 分** | 135 分 |
+| The Detective Servant | 2019.4.13f1 | 经典无 Addressables（同 Happiness Double Room 形态） | 80 分 |
+| Rebirth Pub | **UnityFS 6000.0** | data.unity3d + Addressables 混合 | 125 分 |
+| Kaiju Princess 2 | 2020.3.42f1 | data.unity3d | 70 分 |
+
+IL2CPP 三部（SUMMER-田舎の性活 / MiraisMidnight / Bunny）均为
+`GameAssembly.dll + il2cpp_data/Metadata + StreamingAssets/aa` 形态，工具
+Il2CppDumper（Perfare v6.7.46，win 版 zip 直接可用）已备至
+`D:\K\galgame\unity\Il2CppDumper\`；AssetStudioNext = **Razviar/assetstudio**
+（决策树 §327 的「未核实」出处已核实：v2.4.1，net8.0 变体，本机 .NET 8 运行时在位）。
+
+### 真机闭环两部
+
+- **SexCP_069**（880.5s rc=0）：JSON 枚举 3913（Texture2D 510 / Sprite 2017 /
+  AudioClip 1386），Convert 3908 —— png 2522 + wav 1386；diff=-5 =
+  Texture2D 引用型缺口（505/510，阈值内显式解释）。**音频一轮收齐**（runs=0，
+  未触发 FSB5 补齐），verify 图片 2522/0、音频 1386/0，媒体 185.8 分钟。
+  无案例命中（签名 `d7865c6b7ae0`）。
+- **The Neighbor's Wife**（182.0s rc=0）：JSON 927（Texture2D 356 / Sprite ? /
+  AudioClip 255），png 671 + wav 255；diff=-1（355/356）。verify 全零失败，
+  媒体 49.3 分钟。其 StreamingAssets 只有 aa/，无散装视频。
+
+### 真缺口：StreamingAssets 散装视频被静默漏交付（已修，tests=849）
+
+SexCP_069 的 `StreamingAssets/` 根下躺着 **AVG_Change.mp4 / Test.mp4** 两个裸视频。
+AssetStudio 只认**资产**、不枚举文件系统，旧链路三类导出（Texture2D/Sprite/AudioClip）
+对它们视而不见——全链「成功」、视频永远 0/0、对账照样 0 差。这是坑 3 的镜像面：
+魔数扫描会假阳性，但「按扩展名的文件系统穷举」在这里是完备的（范围内文件非收即拒）。
+
+**修法**（`orchestrator.py`，照 Artemis 散装媒体模式）：
+- `_unity_loose_videos(data_dir)`：扫 `<_Data>/StreamingAssets`（递归）按 `AV_EXT`
+  收裸视频，返回 `[(源, raw/Video/<相对路径>)]`；
+- `stage_extract_unity` 两个分支（新跑 / `--reuse-raw`）都复制（缺才拷，幂等，
+  旧 raw 的复跑也能补进交付）；**新跑**把数量计入 `expected_total` 与对账
+  （`shortfall` 数学自动成立：期望与实际同加 N）；`json_total` 保持纯 JSON 口径，
+  散装视频单列 `loose_videos` 与 archives 行 `(StreamingAssets 散装视频)`；
+- detail 文案显式标注「+ 散装视频 N」。
+
+测试 3 条（扫描口径 / 无目录空表 / stage 级期望与落盘全链），
+全量 `tests=849 / 0 / 0 → PASS`。**后续队列统一带 `--organize`**。
+
+## 41. Summer Clover 音频 494 条静默丢失三重根因 + 抢救配方（2026-11-09 深夜）
+
+### 诊断链（每步实锤）
+
+| 步骤 | 证据 |
+|---|---|
+| 尾部系统性卡死 | `_as_audio_collect2` 两轮 +16/+26/600 名不收敛；老 CLI 与 AssetStudioNext 同批名同结果（排除 CLI 版本因素） |
+| 大小写/杂文件排除 | wav stem casefold 无撞车、raw/Audio 无非 wav 残留 |
+| 缺失名特征 | `AyanoBGM001`、`KasumiHCG…`、`Adv3`——全是语义名（BGM/事件音）；数字名（SE/语音）全收齐 |
+| Raw 导出头 | 486 缺失里 470 个头能导（每个仅 156-168 字节）；**465 个的 `m_Source` 全指向 `archive:/CAB-b6da09c380343ccfd817eadcebd77673/CAB-b6da….resource`**（同一个 CAB） |
+| 盘面真相 | `StandaloneWindows64\d6412fdd….bundle_unpacked\CAB-b6da….resS`（5.33GB）= repack 把该 CAB 的流式资源抽成了外部文件；**offset 直读无 FSB5 魔数**、465 条声称数据 8.4GB > 5.33GB（此文件不可直接用）；**但原始 `d6412fdd….bundle` 还在盘上** |
+| 突破口 | **把 bundle 单文件直接当输入喂 AssetStudioNext** → 缺失 clip 全部可导（AyanoBGM001.wav 27.9MB = 158s 16bit PCM 完全体）。folder 模式解析不到被抽走的外部流；单文件模式自己解 bundle 内部流 |
+
+### 新坑：AssetStudioNext AudioClip Convert ≈8 个/次导出上限
+
+批 100 → 8、批 20 → 8（日志 `Finished exporting 8 assets. N assets skipped (not
+extractable or files already exist)`）、**批 8 → 8/8**、单名必成。同一 clip 单名可导、
+进大批就被 skip——skip 是**静默**的（退出码 0）。对账口径（按名字数产物）是唯一能抓住它的网。
+
+### 抢救配方（可复用）
+
+`bundle 单文件输入 + --names ^(...)$ 批≤8 + 产物缺才拷 + 空批攒 24 个切单名清尾`。
+脚本：`D:\K\zcode\_tmp_unity\audio_rescue4.py`（会话临时脚本，未入库；配方已写进
+AGENTS.md 2026-11-09 节）。实测节奏：批 ~40-175s，494 名约 1.5-2.5h；
+900s 超时批（大 BGM）rc=-9 但已导部分照收。
+BySource 分组在这个 bundle 上 20 分钟跑不完一批 12 名（别用）；vgmstream（r2168，已备
+`D:\K\galgame\unity\vgmstream\`）本轮未用上（Convert 直接出成品 wav）。
+
+### 教训
+
+① 「报错串 → 动作」决策树要加一行：**Unity Addressables 游戏音频缺失 + Raw 头指向单一
+CAB → 查 `*_bundle_unpacked/` 目录（repack 抽流）→ 原始 bundle 还在就用单文件输入抢救**；
+② AssetStudio 系工具的「每批导出上限」是隐性资源上限，批越小越可信，跟坑 4 同族；
+③ 给游戏目录做减法的 repack 会制造「判定/枚举正常、交付残缺」的假象——**对账是唯一防线**。

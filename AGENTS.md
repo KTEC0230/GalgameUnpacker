@@ -22,7 +22,37 @@
 
 > **2026-11-02 测试反馈**：随包 GARbro 的 .NET 插件加载修复仅适用于可信工具目录；Unity 样本的音频收集未对账通过，KiriKiri 索引兜底已用真实注入新索引和模拟窗口缺失提取 2562 条，自然窗口缺失尚未复现。案例索引已保留旧案例并加入 Toshiue。实测和限制见 `verified-findings.md`。
 
-> **📌 当前状态（2026-11-08 深夜收口，★今日战果：bugfix6→11 六个包、4 部游戏真机闭环、8 个真机缺口修复★）**
+> **📌 当前状态增量（2026-11-09 深夜，Unity 队列开跑中 —— 会话被打断时在此接力）**
+> - **Unity 队列实战**：SexCP_069 ✅ rc=0（880.5s，图片 2522/音频 1386 零失败）、
+>   The Neighbor's Wife ✅ rc=0（182s，图片 671/音频 255 零失败）——Unity 链路
+>   第 4/5 个真机样本。两部都还没补 `--organize` 归档视图（要 `--reuse-raw "…\raw" --organize` 复跑，
+>   **注意 `--reuse-raw` 必须带 raw 路径参数**）。
+> - **⚠️ 工作树有未提交改动（就是修复产物，别清掉）**：`orchestrator.py` 新增
+>   `_unity_loose_videos()` + stage 集成（StreamingAssets 散装视频收集，SexCP_069 的
+>   2 个裸 mp4 暴露的口径缺口）+ `tests/test_orchestrator.py` 3 条新测试 +
+>   `verified-findings.md` §40。基线已跑：**tests=849 / 0 / 0 → PASS**、golden 零漂移。
+>   **接手后先显式 add 提交这批。**
+> - **Summer Clover（进行到一半）**：图片/Sprite 已在 `raw/`（JSON 4836 资产：T2D/Sprite
+>   全出）；音频卡 494 条（根因与抢救配方见文末「2026-11-09」节 + `verified-findings.md`
+>   §41）——**后台抢救循环在跑**（`D:\K\zcode\_tmp_unity\audio_rescue4.py`，批≤8 对
+>   bundle 单文件导出，会话断了自己重跑即可，missing 名单在
+>   `D:\GalgameOutput\Summer Clover\_work\audio_fix\missing_names.txt`）；跑完后
+>   `orchestrator.py "D:/HY/Summer Clover/SummerClover" --out "D:\GalgameOutput\Summer Clover"
+>   --reuse-raw "D:\GalgameOutput\Summer Clover\raw" --organize` 出正式交付（**游戏根用内层
+>   SummerClover 目录**，外层判定只有 30 分）。
+> - **部署目录没了**：`D:\GalgameUnpacker\` 整个被用户清盘删除；本轮全部**源码态直跑**
+>   （HEAD = bugfix11 同代码，等价）；zip 还在 `packaging/Output/` 可随时重部署，要不要重部署问用户。
+> - **工具已备齐**（IL2CPP 三部随时可开）：`D:\K\galgame\unity\Il2CppDumper\`（Perfare
+>   v6.7.46 win 版，exe 冒烟能启动）、`D:\K\galgame\unity\AssetStudioNext\`（= 决策树里
+>   「AssetStudioNext」的实证出处 **Razviar/assetstudio v2.4.1** net8.0，CLI 旗标与旧版
+>   全兼容，Unity 6000 用它，切 env `TOOLBRIDGE_ASSETSTUDIO` 即可）、
+>   `D:\K\galgame\unity\vgmstream\`（r2168，FSB5 转换备用，本轮没用上）。
+>   下载路由：**api.github.com 直连可用**；release 资产直连慢（~9KB/s）要 `-C -` 续传 +
+>   1800s 超时；本机代理口 7897/18788 都不通。
+> - **源码状态**：HEAD `485a112`，工作树有上述未提交改动；基线 tests=849。
+>
+
+> **📌 当前状态（2026-11-08 深夜收口）**
 > - **交付**：GitHub Release **`v0.8.2`**（`687f4cd3…f26de05e983d`，asset `717312891`）**原样未动**；
 >   **2026-11-08 深夜已发布 [v0.8.2-bugfix11](https://github.com/KTEC1200/GalgameUnpacker/releases/tag/v0.8.2-bugfix11)**（prerelease，id 438296258，SHA256 `b848160b…cfc43de` 三方核对一致，说明含 bugfix6→11 全部改动）；
 >   本地迭代全部走 `--tag` 本地包（下方 bugfix5→11），`version.py` / README 只改过
@@ -69,9 +99,14 @@
 > 2. **Full Unpack 泛化继续**（待办 4）：已验 3 部（教师催眠2 / 堕落妻子 = GUI 链，
 >    温泉蒸汽人妻 = 静态链）；aniyome 阻塞于翻译补丁（见上①）；剩余样本
 >    昼下がり×2、Doinaka（9 包）。
-> 3. **Unity 队列 9 部**（新增）：Mono 组 6 部随时可跑（SexCP_069 同版本最稳；
->    Rebirth Pub / Kaiju Princess 2 是 `data.unity3d` 形态）；**IL2CPP 3 部需先备
->    Il2CppDumper + AssetStudioNext**（Unity 6000 的 Bunny 只认 AssetStudioNext）。
+> 3. **Unity 队列 10 部（2026-11-09 深夜进度）**：
+>    ✅ SexCP_069（rc=0，差 organize 归档视图）、✅ The Neighbor's Wife（rc=0，差 organize）、
+>    🔄 Summer Clover（音频抢救循环跑完后 `--reuse-raw --organize` 收尾；游戏根=内层
+>    `SummerClover\`）、⬜ The Detective Servant（2019.4.13 经典形态，直接跑）、
+>    ⬜ Kaiju Princess 2（data.unity3d 2020.3，老 CLI 能否读待实测）、
+>    ⬜ Rebirth Pub（**UnityFS 6000.0**，大概率要 `TOOLBRIDGE_ASSETSTUDIO` 指 AssetStudioNext）、
+>    ⬜ IL2CPP 三部（SUMMER-田舎の性活 / MiraisMidnight / Bunny 6000.0.58，工具已备齐见上）。
+>    **统一带 `--organize`**；散装视频口径已修进链路（见 verified-findings §40）。
 > 4. **案例库扩容**（待办 5）+ `build_cases.py --from-manifests` 的 manifest 扫描路径
 >    要对齐新产物家 `D:\GalgameOutput\`（下次动案例库时一起做）。
 > 5. ACE 来源（不阻塞，见上②）。
@@ -2214,3 +2249,77 @@ manifest 同在 `D:\GalgameOutput\温泉蒸汽人妻\manifest.json`。
 （Rebirth Pub / Kaiju Princess 2）→ IL2CPP 三部（SUMMER-田舎の性活 / MiraisMidnight /
 Bunny 6000.0.58——需先备 Il2CppDumper 与 AssetStudioNext）。
 测试：新增同名去重回归 1 条，全量 `tests=846 / 0 / 0 → PASS`。
+
+## 2026-11-09 深夜 Unity 队列开跑（接 bugfix11）：两部闭环 + 散装视频口径修复 + Summer Clover 音频抢救
+
+> 本节是「当前状态增量（11-09）」的展开。会话在 Summer Clover 音频抢救中途被打断，
+> 接手要点全部写在上增量块里，这里留方法论与实测细节。
+
+### 队列侦察结论（6 部 Mono 组版本/形态实测）
+
+| 游戏 | Unity 版本 | 形态 | 判定 |
+|---|---|---|---|
+| SexCP_069 | 2022.3.62f2 | 经典 + Addressables（1683 bundle，StreamingAssets 根有 2 个裸 mp4） | 135 |
+| The Neighbor's Wife | 2021.3.5f1 | 经典 + Addressables；数据目录名 `Kinjo no Hitozuma_Data`（与游戏目录名不同，`*_Data` 后缀规则天然兼容） | 135 |
+| Summer Clover | 2020.3.48f1 | **嵌套布局**：真实游戏根 = `Summer Clover\SummerClover\`（外层判定只有 30 分未达阈值，内层 135）；StreamingAssets 根无散装视频；8486 bundle | 135 |
+| The Detective Servant | 2019.4.13f1 | 经典无 Addressables（同 Happiness Double Room 形态），4.2G | 80 |
+| Rebirth Pub | **UnityFS 6000.0** | data.unity3d + StreamingAssets/aa 混合（2175 bundle），11G | 125 |
+| Kaiju Princess 2 | 2020.3.42f1 | data.unity3d（2.7GB）+ resources.resource | 70 |
+
+### 真机闭环两部（数字）
+
+- **SexCP_069**：880.5s rc=0。JSON 枚举 3913（T2D 510 / Sprite 2017 / AudioClip 1386），
+  png 2522 + wav 1386；diff=-5 = Texture2D 引用型缺口（505/510，阈值内显式解释）。
+  **音频一轮收齐**（runs=0，未触发 FSB5 补齐）。无案例命中（签名 `d7865c6b7ae0`）。
+- **The Neighbor's Wife**：182.0s rc=0。JSON 927，png 671 + wav 255；diff=-1（355/356）。
+  媒体 49.3 分钟。两部 verify 全零失败。
+- 两部的 organize 归档视图都还没补（当时不知道要 `--organize`）。
+
+### 真缺口①：StreamingAssets 散装视频被静默漏交付（已修，tests 846→849）
+
+SexCP_069 的 `StreamingAssets/` 根下 2 个裸 mp4（AVG_Change.mp4 / Test.mp4），
+AssetStudio 只认资产不枚举文件系统 → 旧链路全链「成功」、视频永远 0/0。坑 3 的镜像面。
+修法（`orchestrator.py`，照 Artemis 散装媒体模式）：`_unity_loose_videos()` 按 `AV_EXT`
+扫 StreamingAssets（递归）→ `raw/Video/<相对路径>`；两个分支（新跑/`--reuse-raw`）都复制
+（幂等，缺才拷）；**新跑**计入 expected_total 与对账（shortfall 数学自动成立）；
+`json_total` 保持纯 JSON 口径；detail 显式标注「+ 散装视频 N」。
+测试 3 条，全量 tests=849。**Neighbor's Wife 无散装视频（StreamingAssets 只有 aa/）。**
+
+### 真缺口②：Summer Clover 音频 494 条静默丢失 —— 根因是 repack 抽走了 resS（抢救配方）
+
+经过（诊断链每步都有实锤，细节 verified-findings §41）：
+1. AudioClip Convert 1800s 超时（11G 游戏）；`_as_audio_collect2` 按名补齐到 1533/2027 后
+   **尾部 576 名在两个 AssetStudio fork 上一致卡死**（不同进程/批量/CLI 版本同结果 = 系统性）。
+2. 全量 Raw 导出缺失名单的头（.dat 只有 168 字节）：`m_Source = archive:/CAB-b6da…/CAB-b6da….resource`
+   —— **486 个缺失里 465 个全指向同一个 CAB**。
+3. 盘面：`…bundle_unpacked\CAB-b6da….resS`（5.33GB，repack 把 CAB 的 resS 抽成了外部文件，
+   目录 Aug-09 就有）——offset 直接读**没有** FSB5 魔数，且 465 条声称数据总量 8.4GB > 5.33GB，
+   这文件不能直接用；**但原始 `d6412fdd….bundle` 就在旁边没删**。
+4. **把 bundle 单文件直接喂 AssetStudioNext（输入=文件而非目录）→ 缺失 clip 全部能导**
+   （AyanoBGM001.wav 27.9MB 完全体）。folder 模式解析不到被抽走的外部流，单文件模式自己
+   解 bundle 内的流，完全正常。
+5. **新坑：AssetStudioNext 的 AudioClip Convert 有 ≈8 个/次的导出上限**——批 20 出 8、
+   批 100 出 8（日志 "Finished exporting 8 assets. N assets skipped (not extractable or
+   files already exist)"），批 8 → 8/8，单名必成。超过就静默丢，退出码照样 0。
+6. 抢救配方（`D:\K\zcode\_tmp_unity\audio_rescue4.py`，会话临时脚本）：
+   bundle 单文件输入 + `--names ^(...)$` **批≤8** + 产物移入 `raw/Audio`（缺才拷）+
+   900s 超时（大 BGM 批会超时，rc=-9 但已导部分照收）+ 空批进 stuck 队列、攒 24 个自动切
+   **单名模式**清尾（单名 600s 超时必成）。进度/名单全在
+   `D:\GalgameOutput\Summer Clover\_work\audio_fix\`（missing_names.txt / headers.json /
+   still_missing.txt）。**断点安全**：随时可停，重跑自动从 missing-已落盘 差集续跑。
+7. 抢救完成后收尾：`orchestrator.py "D:/HY/Summer Clover/SummerClover" --out
+   "D:\GalgameOutput\Summer Clover" --reuse-raw "D:\GalgameOutput\Summer Clover\raw" --organize`。
+
+### 本会话环境事实（新增）
+
+- **`D:\GalgameUnpacker\`（标准部署）被用户清盘删除**——本轮全程源码态直跑
+  （`C:\Python314\python.exe -u orchestrator.py …`，HEAD 与 bugfix11 同代码）。
+  zip 在 `packaging/Output/` 还能重部署，是否重部署问用户。
+- **网络**：`api.github.com` 直连可用（查 release 资产列表）；release zip 直连 ~9KB/s，
+  必须 `curl -C -` 续传 + 1800s 超时；代理口 7897/18788 均不通。本机 .NET 6/8/9/10 齐全。
+- **工具三件**（`D:\K\galgame\unity\` 下新增）：Il2CppDumper（Perfare v6.7.46 win 版，
+  无参数启动会弹文件框=正常）、AssetStudioNext（Razviar v2.4.1 net8.0，CLI/CLI.exe 与
+  GUI 都有，旗标兼容）、vgmstream（r2168，备用未用上）。zip 原件在 `D:\K\galgame\unity\_dl\`。
+- **抢救教训×2**：① 我自己的临时脚本没兜 `subprocess.TimeoutExpired`（仓库代码都有，
+  现写脚本也要照抄这个纪律）；② 两条 AssetStudio 抢救线并行 = 内存 thrash 互相拖死，
+  **重活必须串行**。

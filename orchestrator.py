@@ -1563,6 +1563,26 @@ def _unity_data_dir(game_dir: Path) -> Path | None:
     return None
 
 
+def _unity_loose_videos(data_dir: Path) -> list[tuple[Path, Path]]:
+    """StreamingAssets 里的散装视频，返回 [(源, 相对 raw 的目标)]。
+
+    Unity 的过场/演出视频常以裸 mp4 躺在 StreamingAssets（资产侧至多只有引用它的
+    VideoClip），而 AssetStudio 只认**资产**、不枚举文件系统——不收就是无声少一类
+    交付（2026-11-08 SexCP_069 实测：StreamingAssets 根下 2 个 mp4，全链「成功」却
+    视频永远 0/0）。这是坑 3 的镜像面：魔数扫描会假阳性，但「按扩展名的文件系统
+    扫描」这里是穷举不是猜测。目标保持相对路径（raw/Video/<相对 StreamingAssets>），
+    出处可追；verify 的 AV_EXT 白名单天然覆盖。
+    """
+    sa = data_dir / "StreamingAssets"
+    if not sa.is_dir():
+        return []
+    out: list[tuple[Path, Path]] = []
+    for p in sorted(sa.rglob("*")):
+        if p.is_file() and p.suffix.lower() in AV_EXT:
+            out.append((p, Path("Video") / p.relative_to(sa)))
+    return out
+
+
 def stage_extract_unity(ctx: Ctx) -> Stage:
     """Unity AssetStudio Convert 导出：图片 + 音频。
 
@@ -1597,8 +1617,23 @@ def stage_extract_unity(ctx: Ctx) -> Stage:
     expected_total = exp["total"]
     archives: list[dict] = []
 
+    # StreamingAssets 散装视频：两个分支（全新跑 / --reuse-raw）都要收——复制是
+    # 「缺才拷」的幂等操作，复用旧 raw 的重跑也能把上一版漏掉的 videos 补进交付。
+    # 期望与对账只把**新跑**的这份计入（复用分支 expected 一律 None，不假装重验过）。
+    loose = _unity_loose_videos(data_dir)
+    if loose:
+        ctx.raw_dir.mkdir(parents=True, exist_ok=True)
+        for src, rel in loose:
+            dst = ctx.raw_dir / rel
+            if not dst.exists():
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src, dst)
+        expected_total += len(loose)
+        ctx.log("extract", f"[视频] StreamingAssets 散装视频 {len(loose)} 个 → raw/Video/")
+
     if ctx.reuse_raw is None:
-        ctx.log("extract", f"开始单次 Convert 导出（JSON 口径 {expected_total} 个资产，"
+        ctx.log("extract", f"开始单次 Convert 导出（JSON 口径 {exp['total']} 个资产"
+                           f"{' + 散装视频 %d' % len(loose) if loose else ''}；"
                            f"图片+音频第一遍；大样本要几分钟，无中间输出）…")
         got = unity.extract_all(data_dir, ctx.raw_dir, as_exe, tmp_root=ctx.work_dir / "unity")
         archives = got.get("archives", [])
@@ -1653,7 +1688,7 @@ def stage_extract_unity(ctx: Ctx) -> Stage:
             audio_exp = len(names)
             exp["by_type"]["AudioClip"] = audio_exp
             exp["total"] = sum(exp["by_type"].values())
-            expected_total = exp["total"]
+            expected_total = exp["total"] + len(loose)
             ctx.log("extract", f"音频单次导出 {audio_got}/{audio_exp}，按名字补齐...")
             res = _as_audio_collect2.collect(data_dir, audio_dir, names, as_exe,
                                              work_root=ctx.work_dir,
@@ -1672,7 +1707,10 @@ def stage_extract_unity(ctx: Ctx) -> Stage:
         # 用 name/entries 会落成三个 null——2026-11-02 实测踩到）
         archives = [{"archive": t, "expected": got["by_type"][t], "got": got["by_type"][t]}
                     for t in unity.UNITY_TYPES]
-        actual_total = got["total"]
+        if loose:
+            archives.append({"archive": "(StreamingAssets 散装视频)",
+                             "expected": len(loose), "got": len(loose)})
+        actual_total = got["total"] + len(loose)
     else:
         # --reuse-raw：不跑 Convert，但仍算地面真相并对账。
         # 逐类落盘数是**扫盘实测**（不给 None，免得交付记录里查不到「每类多少」）；
@@ -1683,6 +1721,11 @@ def stage_extract_unity(ctx: Ctx) -> Stage:
             d = ctx.raw_dir / unity.UNITY_CATEGORIES[t]
             got_n = sum(1 for f in d.rglob("*") if f.is_file()) if d.is_dir() else 0
             archives.append({"archive": t, "expected": None, "got": got_n})
+        if loose:
+            vdir = ctx.raw_dir / "Video"
+            archives.append({"archive": "(StreamingAssets 散装视频)", "expected": None,
+                             "got": sum(1 for f in vdir.rglob("*") if f.is_file())
+                             if vdir.is_dir() else 0})
 
     # Texture2D 已知缺口：AssetStudio 的 JSON 枚举会列出所有资产（含引用型），
     # 但 Convert 只导出可直接使用的资产（Happiness Double Room 实测 460 枚举 / 455 导出）。
@@ -1709,9 +1752,10 @@ def stage_extract_unity(ctx: Ctx) -> Stage:
     # 总账：落盘比枚举少的部分必须**恰好**等于 Texture2D 缺口，多出来的短缺无处解释。
     shortfall = expected_total - actual_total
 
-    st.data["json_total"] = expected_total
+    st.data["json_total"] = exp["total"]
     st.data["expected_total"] = expected_total      # 缺口不削减期望值（见上）
     st.data["actual_total"] = actual_total
+    st.data["loose_videos"] = len(loose)
     st.data["archives"] = archives
     st.data["json_counts"] = exp["by_type"]
     st.data["texture2d_gap"] = texture2d_gap
@@ -1726,7 +1770,8 @@ def stage_extract_unity(ctx: Ctx) -> Stage:
         st.detail = ("对账失败：缺口只允许出现在 Texture2D，但 " + "；".join(type_mism[:3]))
     elif shortfall != texture2d_gap:
         st.ok = False
-        st.detail = (f"对账失败：JSON 枚举 {expected_total} vs 落盘 {actual_total}"
+        st.detail = (f"对账失败：JSON 枚举 {exp['total']} 个资产"
+                     f"{' + 散装视频 %d' % len(loose) if loose else ''} vs 落盘 {actual_total}"
                      f"（差 {shortfall}，但 Texture2D 缺口只能解释 {texture2d_gap}）")
     else:
         st.ok = True
@@ -1742,7 +1787,9 @@ def stage_extract_unity(ctx: Ctx) -> Stage:
             }
         gap_note = (f"，Texture2D 已知缺口 {texture2d_gap} 个"
                     f"（{texture2d_actual}/{texture2d_exp}）" if texture2d_gap > 0 else "")
-        st.detail = (f"JSON 枚举 {expected_total} 个资产，Convert 导出 {actual_total} 个文件"
+        video_note = f" + 散装视频 {len(loose)}" if loose else ""
+        st.detail = (f"JSON 枚举 {exp['total']} 个资产{video_note}，"
+                     f"Convert 导出 {actual_total} 个文件"
                      f"{gap_note}，对账 0 差")
     st.seconds = time.time() - t0
     return st
