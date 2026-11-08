@@ -23,10 +23,19 @@
 > **2026-11-02 测试反馈**：随包 GARbro 的 .NET 插件加载修复仅适用于可信工具目录；Unity 样本的音频收集未对账通过，KiriKiri 索引兜底已用真实注入新索引和模拟窗口缺失提取 2562 条，自然窗口缺失尚未复现。案例索引已保留旧案例并加入 Toshiue。实测和限制见 `verified-findings.md`。
 
 > **📌 当前状态增量（2026-11-09 深夜，Unity 队列开跑中 —— 会话被打断时在此接力）**
+> - **新功能 P0 已交付（提交 `761f867`，用户 `新功能.md` 的 Agent 攻坚能力）**：
+>   `errorcodes.py`（17 错误码唯一出处 + 源码扫描护栏）、`sandbox/actions.py`（11 动作
+>   注册表=契约，执行体 P1）、`diagnostics.py`（自包含诊断包，失败自动落
+>   `<out>/_work/diagnostic/diagnostic.json`，写包永不抛）、manual 复用（needs 挂包路径）、
+>   build_exe 契约进包。**tests=860 / 0 / 0**、golden 零漂移。P0 验收实证：aniyome 真实
+>   失败出包（11 输入含 XP3 魔数、gui_error 原文、案例三命中、env/契约齐全），包在
+>   `D:\GalgameOutput\aniyome\_work\diagnostic\diagnostic.json`。**P1（experiences 库 +
+>   动作执行体 + validator + 四命令）等用户看过诊断包点头再开**。
 > - **Unity 队列实战**：SexCP_069 ✅ rc=0（880.5s，图片 2522/音频 1386 零失败）、
->   The Neighbor's Wife ✅ rc=0（182s，图片 671/音频 255 零失败）——Unity 链路
->   第 4/5 个真机样本。两部都还没补 `--organize` 归档视图（要 `--reuse-raw "…\raw" --organize` 复跑，
->   **注意 `--reuse-raw` 必须带 raw 路径参数**）。
+>   The Neighbor's Wife ✅ rc=0（182s，图片 671/音频 255 零失败）、
+>   **The Detective Servant ✅ rc=0（554s，图片 1827/音频 3190 零失败，媒体 431.6 分钟）**——
+>   Unity 链路第 4/5/6 个真机样本。前两部还没补 `--organize` 归档视图（要
+>   `--reuse-raw "…\raw" --organize` 复跑，**注意 `--reuse-raw` 必须带 raw 路径参数**）。
 > - **⚠️ 工作树有未提交改动（就是修复产物，别清掉）**：`orchestrator.py` 新增
 >   `_unity_loose_videos()` + stage 集成（StreamingAssets 散装视频收集，SexCP_069 的
 >   2 个裸 mp4 暴露的口径缺口）+ `tests/test_orchestrator.py` 3 条新测试 +
