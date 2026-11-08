@@ -391,21 +391,23 @@ def test_poll_survives_an_event_handler_exception(monkeypatch):
 # 输出目录口径（2026-11-04）
 # ---------------------------------------------------------------------------
 
-def test_default_out_dir_is_under_the_game(tmp_path):
-    """★用户要求（2026-11-04）★ 产物默认落 `<游戏目录>/output`。
+def test_default_out_dir_is_in_galgameoutput_root(tmp_path):
+    """★用户要求（2026-11-08）★ 产物默认落 `<游戏所在盘>/GalgameOutput/<游戏名>`。
 
-    解完就在游戏旁边，不用去 C 盘或程序目录翻；换盘换机器也跟着走。
+    不进游戏库（D:\HY 及其子文件夹）——output 混在游戏目录里清盘时真假难辨；
+    集中到盘根专用目录，ASCII 根、跟游戏库同盘。
     """
     game = tmp_path / "Some Game"
 
-    assert gui.default_out_dir(game) == game / "output"
+    assert gui.default_out_dir(game) == Path(tmp_path.anchor) / "GalgameOutput" / "Some Game"
 
 
-def test_default_out_dir_shares_name_with_game_but_is_a_subdir(tmp_path):
-    """别把 output 拼到游戏目录**外面**（早期版本把产物散到用户目录/程序目录，用户找不到）。"""
+def test_default_out_dir_never_under_the_game(tmp_path):
+    """产物路径绝不落在游戏目录之内（含其子路径）。"""
     game = tmp_path / "Some Game"
     out = gui.default_out_dir(game)
-    assert out.parent == game
+
+    assert not out.is_relative_to(game), "产物不许进游戏目录"
 
 
 def test_ensure_writable_passes_and_creates_dir(tmp_path):
@@ -507,26 +509,23 @@ def test_open_out_warns_when_no_usable_parent(tmp_path, monkeypatch):
     assert seen, "没有可打开的目录时必须提示，不能静默无反应"
 
 
-def test_default_out_dir_falls_back_to_parent_for_illegal_names(tmp_path):
-    """★实测踩过★ 游戏目录名含 `|` 时，不能在里面建子目录。
+def test_default_out_dir_cleans_illegal_names(tmp_path):
+    """★实测踩过★ 游戏目录名含 `|` 时不能在里面建子目录（2026-11-04 实测）。
 
-    实测 `D://HY//【PC】… | Ore o Hoshigaru…` 用 CreateDirectory 直接报
-    「文件名、目录名或卷标语法不正确」—— 这类目录是从压缩包/别的系统带来的，
-    NTFS 允许它存在，但**不允许在它下面创建新目录**。这时产物落到父目录下、
-    名字清洗过的目录。
+    新布局下产物在 `<盘根>/GalgameOutput/`，游戏名经 `_legal_component` 清洗，
+    非法字符天然进不了目录名。
     """
     game = tmp_path / "【PC】俺を欲しがる二人の母 | Ore o Hoshigaru"
 
     out = gui.default_out_dir(game)
 
-    assert out.parent == tmp_path, "必须换到父目录，不能还是游戏目录的子路径"
+    assert out.parent == Path(tmp_path.anchor) / "GalgameOutput"
     assert "|" not in out.name, "名字里的非法字符要清掉"
-    assert out.name.endswith("-output")
 
 
-def test_default_out_dir_normal_name_stays_inside(tmp_path):
-    """正常名字（无非法字符）仍然落在 `<游戏>/output`，不要被上面的特例带偏。"""
-    assert gui.default_out_dir(tmp_path / "教师催眠2") == tmp_path / "教师催眠2" / "output"
+def test_default_out_dir_normal_name_goes_to_root(tmp_path):
+    """正常名字原样进 `<盘根>/GalgameOutput/<游戏名>`，不要被清洗逻辑带偏。"""
+    assert gui.default_out_dir(tmp_path / "教师催眠2") == Path(tmp_path.anchor) / "GalgameOutput" / "教师催眠2"
 
 
 def test_open_out_falls_back_to_existing_parent(tmp_path, monkeypatch):

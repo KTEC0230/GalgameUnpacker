@@ -164,20 +164,20 @@ def _legal_component(name: str) -> str:
 
 
 def default_out_dir(game_dir: Path) -> Path:
-    """产物默认落 **`<游戏目录>/output`**（2026-11-04 用户要求）。
+    """产物默认落 **`<游戏所在盘>/GalgameOutput/<清洗后的游戏名>`**（2026-11-08 用户要求）。
 
-    但如果游戏目录名里有 Windows 非法字符（`|` `?` `*` 等），就没法在里面建子目录 ——
-    这时退到**父目录**下一个清洗过名字的目录，形如 `<父目录>/【PC】…_…-output`。
-    父目录名通常合法（它是由资源管理器正常创建的）。
+    用户明确要求产物**不进游戏库**（D:\\HY 及其子文件夹）：`output` 混在游戏目录里，
+    清盘时真假难辨（2026-11-08 清理事故），而且旧布局曾让 krkr stage 把产物整树
+    复制一遍（bugfix6 已修；产物出库后连这个前提都没了）。集中到**盘根的专用
+    目录**：ASCII 根、好找、跟游戏库同盘；游戏名经 `_legal_component` 清洗，
+    旧方案「目录名含 `|` 建不了子目录」的坑在这个布局下天然不存在。
 
     游戏目录不可写（只读安装、光盘、受保护目录、被终端防护拦）时由 `_start` 接管：
     先按 `fallback_out_dirs()` 依次试可写位置，**试到就继续跑**（2026-11-06 起）；
     全都不可写才弹窗 —— 那时说明是进程级拦截，换目录没用，让用户跑「环境自检」。
     """
-    name = game_dir.name
-    if any(ch in _ILLEGAL for ch in name):
-        return game_dir.parent / f"{_legal_component(name)}-output"
-    return game_dir / "output"
+    drive = game_dir.anchor or "D:/"     # 相对路径没有盘符，按库所在盘 D: 兜底
+    return Path(drive) / "GalgameOutput" / _legal_component(game_dir.name)
 
 
 def has_stale_products(out_dir: Path) -> bool:

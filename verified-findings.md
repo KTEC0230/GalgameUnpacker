@@ -2634,3 +2634,49 @@ Ren'Py/Tyrano/未知 已有，RPG Maker/AdvHD 本次补上；**Artemis/ExHIBIT/C
 Yu-Ris 仍只有真实样本代表，下次盘面变化同样的红会再出现**）；② 回收站是判
 「误删 vs 有意清理」的一手证据，但**永久删除不走回收站**，证据链会断——
 拿不到证据就按先例处理并在文档里写明恢复路径。
+
+## 37. 产物出库：GUI 默认输出改到 `<游戏所在盘>\GalgameOutput\<游戏名>`（2026-11-08 晚，bugfix7）
+
+### 背景与用户决策链
+
+产物默认位置的三次变化，每次都是用户定的：
+`Documents`（被 EDR 拦，§23）→ `%USERPROFILE%\GalgameUnpacker`（找不到）→
+`<游戏>\output`（v0.4.0，「解完就在游戏旁边」）→ **`<游戏所在盘>\GalgameOutput\<游戏名>`**
+（本次，2026-11-08：「不要放在 HY 和子文件夹里」）。
+
+压垮 `<游戏>\output` 的两根稻草：
+1. **清盘真假难辨**：产物混在游戏目录里，用户清理时要逐个辨认 `output*`/`output_fullauto*`
+   是不是垃圾（今天连删带改名折腾了一下午，两个解包器自己的样本目录也被动了）；
+2. **krkr stage 白抄 15GB 的根源**：stage 复制按整树走，产物在游戏目录里就被一起
+   拷进 stage（§36.1 修了跳过逻辑；产物出库后这个前提直接消失）。
+
+### 实现（`gui.py` 的 `default_out_dir` 一处）
+
+- 盘符取 `game_dir.anchor`（游戏在哪个盘，产物落哪个盘的根；相对路径兜底 `D:/`
+  ——本机游戏库在 D）。**ASCII 根 + 清洗过的游戏名**（复用 `_legal_component`，
+  大小写与非法字符一次解决）。
+- 旧方案的两个分支（正常名落 `<游戏>/output`、非法名退父目录 `-output` 后缀）
+  合并成一个表达式，非法字符的特例**天然消失**——固定 ASCII 根下不存在
+  「在含 `|` 的目录里建子目录」这个问题。
+- 不动的部分：`fallback_out_dirs()` 降级链（v0.6.0）、`has_stale_products` 残留判定
+  （含 `.galunpack-view` 视图口径）、CLI `--out` 显式口径、planner `_extracted`。
+- 同盘根目录意味着**跨卷硬链接风险为零**（organize 视图依赖同盘硬链接，§B）。
+
+### 测试与连带修复
+
+- test_gui 4 条改写：默认落 `<盘根>/GalgameOutput/<名>`、**绝不落游戏目录内**
+  （`is_relative_to` 断言）、非法名清洗、正常名直落。全量
+  `tests=835 / 0 failures / 0 errors → PASS`。
+- **golden 连带收口**：同日用户清理把三个样本挪了位/改了名——
+  「【PC电脑】甜蜜女友2+」→「甜蜜女友2+」、「常識改変学園-製品版-」→
+  「常識改変学園」、「tm\ラブラブお痴験バイト性活」→ 顶层。
+  `REAL_SAMPLES` 指到新位置后 golden **恢复 12/12 零跳过**；挪位前后 facts 逐字
+  一致（rpgmaker MV / advhd_arc_count 18），确认是同一批游戏。
+- 构建坑无新增（同名 zip 拒绝覆盖 + 先删旧 zip 的纪律照旧）。
+
+### 交付
+
+`GalgameUnpacker-0.8.2-bugfix7-portable.zip`（141.9 MiB，
+SHA256 `cf1f81afd433516018f6e166384a35d48da07137f5df6bc57c5430071f89ed81`），
+CArchiveReader 实证 gui 模块含 `GalgameOutput`；部署标准路径，旧 bugfix6 部署目录
+删除（zip 留档），doctor / gui-smoke / 冻结 dry-run 全过。

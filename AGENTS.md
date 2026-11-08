@@ -26,7 +26,12 @@
 >   SHA256 `687f4cd3…f26de05e983d`），已发布到 GitHub Release **`v0.8.2`**
 >   <https://github.com/KTEC1200/game-get/releases/tag/v0.8.2>（仅 1 个附件，asset `717312891`）。
 >   **本轮不改 Release 附件、不动 `version.py` / README。**
-> - **✅ 当前本地包 bugfix6（用这个，已部署标准路径，2026-11-08 晚）**：
+> - **✅ 当前本地包 bugfix7（用这个，已部署标准路径，2026-11-08 晚）**：
+>   `packaging/Output/GalgameUnpacker-0.8.2-bugfix7-portable.zip`
+>   （141.9 MiB，SHA256 `cf1f81af…f89ed81`），BUILD_INFO 标 `bugfix7`；
+>   内容 = **GUI 默认产物出库**：`<游戏所在盘>\GalgameOutput\<游戏名>`，不进游戏库
+>   （2026-11-08 用户定调）。校验与部署自检全过，旧 bugfix6 部署目录已删（zip 有档）。
+> - **历史本地包 bugfix6（stage 速度优化，2026-11-08 晚）**：
 >   `packaging/Output/GalgameUnpacker-0.8.2-bugfix6-portable.zip`
 >   （141.7 MiB，SHA256 `0d763516…ea3505a72`），BUILD_INFO 标 `bugfix6` / 提交 `12aaf32`；
 >   内容 = **stage 跳过游戏根下 output*/分类 非引擎目录**（速度优化，单轮省 ~15GB 复制）
@@ -1070,6 +1075,11 @@ preflight 的 `_tree_bytes` 在大样本上是几十秒（已有提示）——�
 
 ## 2026-11-04 v0.4.0：输出目录改成 `<游戏目录>\output`
 
+> ⭐ **2026-11-08 本节的默认已被取代**：用户清理 D:\HY 后定调「产物不进游戏库」，
+> GUI 默认改为 **`<游戏所在盘>\GalgameOutput\<游戏名>`**（bugfix7），见文末
+> 「产物出库」一节。本节保留为历史口径（v0.6.0 的自动降级、v0.4.1 的非法字符
+> 修复仍然有效，只是接在一个新的默认值后面）。
+
 ### 用户要求
 
 「用户添加游戏的时候，解包目录自动变为 ……/游戏根目录/output」。
@@ -2104,3 +2114,35 @@ output_fullauto1/2 已删）。完整证据在 verified-findings §36，这里�
    fixture 6 → **8**。Artemis / ExHIBIT / CatSystem2 / Yu-Ris 仍只有真实样本代表。
 
 基线现状：**8 fixture + 10 真实样本**零漂移；全量 `tests=835 / 0 / 0 / 15 skipped → PASS`。
+
+## 2026-11-08 晚 产物出库：GUI 默认输出改到 `<游戏所在盘>\GalgameOutput\<游戏名>`（bugfix7）
+
+用户清理 D:\HY 后定调：**解包产物不进游戏库（HY 及其子文件夹）**。v0.4.0 的默认
+`<游戏>\output` 让产物混在游戏目录里，清盘时真假难辨（今天删产物要逐个辨认
+`output*`/`fullauto*`），而且旧布局是 krkr stage 白抄 15GB 的根源（bugfix6 修了
+行为，产物出库后连前提都没了）。
+
+### 改了什么（`gui.py` 一处 + 测试 + README + golden 路径）
+
+- `default_out_dir(game)` → **`<游戏所在盘>/GalgameOutput/<清洗后的游戏名>`**：
+  盘符取 `game_dir.anchor`（相对路径兜底 `D:/`，库所在盘），名字走既有
+  `_legal_component` 清洗。旧方案「目录名含 `|` 建不了子目录要退父目录」的特例
+  在这个布局下**天然消失**，连带删掉那个分支。
+- `fallback_out_dirs()`（程序目录→LOCALAPPDATA→TEMP）与 `has_stale_products`
+  残留判定**不动**——它们只认传入的 out_dir。**CLI 口径不变**（`--out` 显式传入；
+  planner 的 `_extracted` 约定不动）。
+- `REAL_SAMPLES` 三处路径更新（同日用户清理/改名，内容逐字一致）：
+  「【PC电脑】甜蜜女友2+」→「甜蜜女友2+」；「常識改変学園-製品版-」→
+  「常識改変学園」；「tm\ラブラブお痴験バイト性活」→ 顶层。golden 重新生成，
+  **恢复 12/12 零跳过**（上午因挪位变成 10+2 跳过）。
+
+### 基线与交付
+
+- `tests=835 / 0 failures / 0 errors → PASS`（test_gui 4 条改写：GalgameOutput 根 /
+  绝不落游戏内 / 非法名清洗 / 正常名直落）；golden 零漂移。
+- 包 `GalgameUnpacker-0.8.2-bugfix7-portable.zip`（141.9 MiB，
+  SHA256 `cf1f81afd433516018f6e166384a35d48da07137f5df6bc57c5430071f89ed81`，
+  exe `745449c6…`，1515 项）。校验：testzip / README 逐字（含新文案）/
+  CArchiveReader 实证 gui 模块含 `GalgameOutput`。
+- 部署：标准路径已是 bugfix7；旧 bugfix6 部署目录已删（zip 有档，不留 prev 目录）；
+  doctor / gui-smoke / 冻结 dry-run（教师催眠2 KiriKiri 90）全过。

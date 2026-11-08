@@ -53,11 +53,14 @@ REAL_SAMPLES: list[tuple[str, str]] = [
     (r"D:\HY\My Wife Wants to Be a Professional Cosplayer", "Unity"),
     (r"D:\HY\Swipe Right for Sugar Mama Sensei", "Ren'Py"),
     (r"D:\HY\SPITE", "Tyrano/Electron"),
-    (r"D:\HY\常識改変学園-製品版-", "RPG Maker"),
-    (r"D:\HY\tm\ラブラブお痴験バイト性活", "AdvHD"),
+    # 2026-11-08 用户清理时把这两个目录挪了位置/改了名（内容没变，扫描结果逐字一致）：
+    # 「常識改変学園-製品版-」→「常識改変学園」；「tm\ラブラブお痴験バイト性活」→ 顶层
+    (r"D:\HY\常識改変学園", "RPG Maker"),
+    (r"D:\HY\ラブラブお痴験バイト性活", "AdvHD"),
     (r"D:\HY\あまねぇ -幼馴染お姉ちゃんとのえちえちあまやかされ同棲生活-", "Yu-Ris"),
     (r"D:\HY\夕凪荘的S级的女朋友们", "ExHIBIT"),
-    (r"D:\HY\甜蜜女友\【PC电脑】甜蜜女友2+", "CatSystem2"),
+    # 2026-11-08 用户把「【PC电脑】甜蜜女友2+」改名为「甜蜜女友2+」（同一游戏，内容没变）
+    (r"D:\HY\甜蜜女友\甜蜜女友2+", "CatSystem2"),
     (r"D:\HY\pork社\高慢妻陥落！！", "KiriKiri"),
     (r"D:\HY\教师催眠1", "KiriKiri"),
     (r"D:\HY\Toshiue Kanojo", "Artemis"),

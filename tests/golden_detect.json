@@ -265,29 +265,6 @@
       "path": "D:\\HY\\Toshiue Kanojo",
       "score": 90
     },
-    "【PC电脑】甜蜜女友2+": {
-      "above_threshold": true,
-      "engine": "CatSystem2",
-      "expect": "CatSystem2",
-      "facts": {
-        "cs2_int_count": 55
-      },
-      "guesses": [
-        {
-          "engine": "CatSystem2",
-          "evidence": [
-            "+70 `cs2.exe` 存在（CatSystem2 引擎主程序）",
-            "+20 发现 55 个 `.int`/`.dfn`/`.hg3` 文件"
-          ],
-          "score": 90
-        }
-      ],
-      "has_attention": false,
-      "has_warning": false,
-      "note_count": 0,
-      "path": "D:\\HY\\甜蜜女友\\【PC电脑】甜蜜女友2+",
-      "score": 90
-    },
     "あまねぇ -幼馴染お姉ちゃんとのえちえちあまやかされ同棲生活-": {
       "above_threshold": true,
       "engine": "Yu-Ris",
@@ -313,9 +290,28 @@
       "score": 105
     },
     "ラブラブお痴験バイト性活": {
+      "above_threshold": true,
+      "engine": "AdvHD",
       "expect": "AdvHD",
-      "missing": true,
-      "path": "D:\\HY\\tm\\ラブラブお痴験バイト性活"
+      "facts": {
+        "advhd_arc_count": 18
+      },
+      "guesses": [
+        {
+          "engine": "AdvHD",
+          "evidence": [
+            "+70 `AdvHD.exe` 存在（AdvHD 引擎主程序）",
+            "+20 `AdvHDLang.dll` 存在",
+            "+15 发现 18 个 `.arc` 封包"
+          ],
+          "score": 105
+        }
+      ],
+      "has_attention": false,
+      "has_warning": false,
+      "note_count": 0,
+      "path": "D:\\HY\\ラブラブお痴験バイト性活",
+      "score": 105
     },
     "兼职人妻": {
       "above_threshold": true,
@@ -363,10 +359,30 @@
       "path": "D:\\HY\\夕凪荘的S级的女朋友们",
       "score": 100
     },
-    "常識改変学園-製品版-": {
+    "常識改変学園": {
+      "above_threshold": true,
+      "engine": "RPG Maker",
       "expect": "RPG Maker",
-      "missing": true,
-      "path": "D:\\HY\\常識改変学園-製品版-"
+      "facts": {
+        "rpgmaker_has_encryption_key_file": true,
+        "rpgmaker_variant": "MV"
+      },
+      "guesses": [
+        {
+          "engine": "RPG Maker",
+          "evidence": [
+            "+70 NW.js 运行时（nw.dll/node.dll/icudtl.dat）+ `www/` 目录",
+            "+25 `www/js/rpg_core.js` 存在 → **MV**",
+            "+10 `www/data/System.json` 存在（加密 key 的来源）"
+          ],
+          "score": 105
+        }
+      ],
+      "has_attention": false,
+      "has_warning": false,
+      "note_count": 0,
+      "path": "D:\\HY\\常識改変学園",
+      "score": 105
     },
     "教师催眠1": {
       "above_threshold": true,
@@ -387,6 +403,29 @@
       "has_warning": false,
       "note_count": 0,
       "path": "D:\\HY\\教师催眠1",
+      "score": 90
+    },
+    "甜蜜女友2+": {
+      "above_threshold": true,
+      "engine": "CatSystem2",
+      "expect": "CatSystem2",
+      "facts": {
+        "cs2_int_count": 55
+      },
+      "guesses": [
+        {
+          "engine": "CatSystem2",
+          "evidence": [
+            "+70 `cs2.exe` 存在（CatSystem2 引擎主程序）",
+            "+20 发现 55 个 `.int`/`.dfn`/`.hg3` 文件"
+          ],
+          "score": 90
+        }
+      ],
+      "has_attention": false,
+      "has_warning": false,
+      "note_count": 0,
+      "path": "D:\\HY\\甜蜜女友\\甜蜜女友2+",
       "score": 90
     },
     "高慢妻陥落！！": {
