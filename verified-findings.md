@@ -2524,3 +2524,80 @@ bugfix4 全量跑：11 包拖完、`ALL DONE: 9821 files`、rc=0，但 manifest 
   优化方向：staging 跳过 output*/分类 等非引擎目录。
 - sibling 的 `write_manifest`（`raw_dir=outdir/data`）多包布局下只数第一个包；
   信息性、被 orchestrator manifest 覆盖，暂不修（记录在案）。
+
+## 36. stage 构建跳过非引擎目录（2026-11-08 晚速度优化，bugfix6）+ 一次 golden 漂移破案
+
+### 36.1 优化本身：staging 不再复制 output*/分类
+
+**问题（11-08 闭环真机实测的遗留量化）**：`krkr_auto_extract.py` 的 stage 构建把
+游戏目录**整树**搬进 ASCII stage（xp3 硬链接零拷贝、其余文件 copy2），而游戏根下的
+`output*`、`分类/` 是我们自己的解包产物——`教师催眠2` 单轮多复制 **~15GB**、
+多花 **2-5 分钟**。
+
+**修法**（`_stage_skip_reason()` / `_stage_skip_scan()` / `_build_stage_tree()`）：
+
+- 扫游戏根**一层**，命中任一 → 整棵不进 stage，逐目录打 `stage skip: <名>（N 个文件）—— <原因>，不参与注入提取`：
+  - 名字（`.lower()` 后）以 `output` 开头——GUI 默认 `<游戏>\output` 与自定的
+    `output11` / `output_fullauto3` 都是这个前缀（真机出现过的全部形态）；
+  - 名字 == `分类`（`organize.VIEW_NAME`，**从 organize.py 导入**，不抄第二份）；
+  - 目录里有 `.galunpack-view` 标记（`organize.VIEW_MARK`）——自定义名字的视图也能认出。
+- **只看首层的边界理由**：产物目录是我们自己写的，引擎数据不会藏在里面；
+  `plugin/*.tpm`、`savedata/` 等引擎必需文件照旧复制，行为面只收窄、不外扩。
+  顶层文件（如 `类目清单.csv` 落在输出目录里的情况）不参与目录跳过。
+- 主流程从 `main()` 内联块抽成 `_build_stage_tree(game_dir, stage)`（可测），
+  单 exe 断言与 game.exe 复制原样保留；KrkrExtract 三件套的复制仍在 main。
+- `--reuse-stage` 续传路径不走构建分支，不受影响；xp3 硬链接失败退 copy2 不变。
+- **skip 扫描本身很便宜**：一层 `listdir` + 每个命中目录一次 `count_files`
+  （教师催眠2 规模 ~1 万文件 <1s），换来的日志自带规模参考。
+
+**测试**：`tests/test_krkr_stage_skip.py` 6 条——原因判定（大小写无关 / 三类命中 /
+三类不命中：plugin、savedata、KrkrExtract_Output）、扫描计数与显式原因、顶层文件与
+缺失目录不参与、构建跳产物保引擎件（game.exe / 原 exe / .xp3 / plugin，且 output/
+分类 不存在）、xp3 硬链接（st_ino + st_dev 相等）、单 exe 断言不回退。
+全量 `tests=833 / 0 failures / 0 errors / 12 skipped → PASS`（接手基线 827 + 6）。
+
+**构建**：`build_exe.py --tag bugfix6` → `GalgameUnpacker-0.8.2-bugfix6-portable.zip`
+（141.7 MiB，SHA256 `0d7635162a12ac402f9aabed41f27e9b41cfea04a7f4b73fa222e07ea3505a72`，
+exe `ee316a0a…e69320`，1514 项）。校验四件套全过：testzip / README 125 行逐字 /
+zip exe = dist exe / CArchiveReader→PYZ→`krkr_auto_extract` 模块 co_names 含
+`_stage_skip_scan`/`_build_stage_tree`/`STAGE_SKIP_OUTPUT_PREFIX`，嵌套 code 对象的
+co_consts 含「不参与注入提取」「解包产物目录」。
+
+**构建坑（第三次撞，钉死）**：`--tag` 对**同名 zip 拒绝覆盖**（`build_exe.py:320`）
+——重打必须先删旧 zip。本轮第一次重打被它静默拒绝，`tail` 又把提示吞了，
+靠包校验里「exe SHA 一致: False」才暴露。**CArchiveReader 校验必须做，
+它抓的就是这种「包没换」**。
+
+**部署**：`D:\GalgameUnpacker\orchestrator` → bugfix6（旧目录改名
+`orchestrator_prev_bugfix5` 保留）。自检：`--doctor` rc=0、`--gui-smoke` rc=0、
+冻结 `--dry-run`（教师催眠2）：KiriKiri score=90、案例签名 `6519ddb81f58` 命中、
+`auto_feasible=False`（整包 krkrZ 列不出，预期）。构建中间 dist 已清
+（`orchestrator_prev_bugfix5` / `_orch_bugfix6_pre`），zip 留档。
+
+**预期收益**：全量跑少复制 ~15GB、省 2-5 分钟；产物目录越大收益越大。
+「stable 40s」×11 包的完成判定耗时仍在，继续等用户实测反馈再动。
+
+### 36.2 顺手破案：golden 漂移 ≠ 代码漂移（Toshiue `artemis_pfs_count` 4→3）
+
+接手基线复测时 `make_golden.py --check` 报 `Toshiue Kanojo` 漂移。**与本轮改动无关**
+（本轮没碰判定链路；会话开工时 check 还是零漂移）。排查链：
+
+1. **fact 定义**（`rules/engines.json`）：`artemis_pfs_count` = 深度 3 内扩展名命中
+   `.pfs/.000/.001/.002/.003` 的**文件数**——不只是 `.pfs` 本体，**补丁副本也计数**。
+2. **现场**：`D:\HY\Toshiue Kanojo` 顶层 mtime = 当天 14:35（其余子目录全是 2024 年
+   原始 mtime），现存 `.pfs/.pfs.000/.pfs.001` 三个卷；`_extracted/` 已被用户清空
+   （只剩 `教师催眠2_diag4`），11-02 的 manifest 不在了（案例库在 git 里，不受影响）。
+3. **回收站只读枚举**（Shell.Application，`GetDetailsOf` 取原路径/删除时间）：
+   当天 14:35 删除了游戏根下的 **`年上彼女 Claude-3-5-sonnet翻译补丁备份`** 文件夹
+   （30.3 MB），里面正是 **`Toshiue_Kanojo.pfs.001` 的备份副本** + 一张说明 jpg
+   ——即基线里的第 4 个计数。
+4. **影响面**：引擎判定不受影响（Artemis score=90 与证据串原样，只差 fact 数字）；
+   案例库签名用的是信号 id 集（fired_ids），不含 fact 数值，查表不受影响。
+
+**结论**：golden 漂移 = 样本在盘上变了（与「My Best Deal 已从磁盘消失」同类），
+不是代码漂移。**基线暂未重新生成**——文件夹在回收站可恢复，等用户确认删除意图：
+确认删除 → 重新生成 golden 并单独提交；还原 → 基线自动回到零漂移。
+
+**教训**：golden 漂移先查「磁盘上的样本变了没」（mtime + 回收站），再查代码；
+`artemis_pfs_count` 这类计数型 fact 对目录内容敏感，样本目录里放任何
+`.000/.001` 类文件都会进基线。

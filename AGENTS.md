@@ -26,14 +26,20 @@
 >   SHA256 `687f4cd3…f26de05e983d`），已发布到 GitHub Release **`v0.8.2`**
 >   <https://github.com/KTEC1200/game-get/releases/tag/v0.8.2>（仅 1 个附件，asset `717312891`）。
 >   **本轮不改 Release 附件、不动 `version.py` / README。**
-> - **✅ 当前本地包 bugfix5（用这个，已部署标准路径）**：
+> - **✅ 当前本地包 bugfix6（用这个，已部署标准路径，2026-11-08 晚）**：
+>   `packaging/Output/GalgameUnpacker-0.8.2-bugfix6-portable.zip`
+>   （141.7 MiB，SHA256 `0d763516…ea3505a72`），BUILD_INFO 标 `bugfix6` / 提交 `12aaf32`；
+>   内容 = **stage 跳过游戏根下 output*/分类 非引擎目录**（速度优化，单轮省 ~15GB 复制）
+>   + BUILD_INFO 模板去过时文案。校验 testzip/README/exe-SHA/CArchiveReader 全过。
+>   **标准路径 `D:\GalgameUnpacker\orchestrator`**（旧包改名
+>   `orchestrator_prev_bugfix5` 保留，不需要可自行删）。
+>   部署自检 doctor / gui-smoke / 冻结 dry-run（教师催眠2）全过。
+> - **历史本地包 bugfix5（krkr 真机闭环包，2026-11-08 03:0x）**：
 >   `packaging/Output/GalgameUnpacker-0.8.2-bugfix5-portable.zip`
 >   （141.7 MiB，SHA256 `12d472fe…4dfd9b`），BUILD_INFO 标 `bugfix5` / 提交 `c286fe6`；
 >   README 125 行逐字相同、exe 三处同 SHA、CArchiveReader 实证
 >   `krkr_auto_extract.NO_AUTO_DISMISS` 进包。
->   **标准路径 `D:\GalgameUnpacker\orchestrator`**（旧包目录改名
->   `orchestrator_prev_bugfix4` 保留）。
->   部署自检 doctor/gui-smoke/dry-run 全 rc=0。本轮内容：krkr 死因修复
+>   本轮内容：krkr 死因修复
 >   （`NO_AUTO_DISMISS` 默认开）+ 收货布局修复（`_collect_krkr_output`）+
 >   `KRKR_STAGE_ROOT` env + dismiss 弹窗正文日志埋点。
 >   **GUI 真机启动已验证（11-07 18:4x）**；11-07 18:06 两次双击闪退
@@ -54,8 +60,9 @@
 >   golden 零漂移、工作树干净——17:55 那个「连 import tkinter 都崩」的后台会话已随重启消失，
 >   PyInstaller 的 Tk 探测一次过。包内 BUILD_INFO 记的提交号是**打包那一刻**的 HEAD；
 >   最新提交号以 `git log -1` 为准。**提交一律显式 add，禁用 `git add -A`。**
-> - **⚠️ 唯一未闭环项：真机 `--allow-gui` 全自动**。原 4 项修复 + 本轮 WinForms 修复都只在
->   源码 / 冻结包自检 / 替身测试里验过，**未经真机复现**；下一次约 40 分钟独占桌面实跑。
+> - **真机 `--allow-gui` 全自动已闭环（11-08 03:0x，待办 3 ✅）**；当前未闭环项：
+>   Full Unpack 泛化（只对教师催眠2 验证过，待办 4）、案例库扩容（待办 5）、
+>   golden 一条待决漂移（Toshiue `artemis_pfs_count` 4→3，见文末「速度优化」节）。
 > - **能力面**：9 条引擎链路可用；加密 KiriKiri 需 `--allow-gui`（要真实桌面）或人工拖拽 +
 >   `--reuse-raw` 收尾。其余引擎判得出但无链路（退出码 2）。
 >
@@ -2025,13 +2032,63 @@ S-1-4-466530695-238761456:(OI)(CI)(W,D,DC)
 
 ### 6. 遗留（记下，不阻塞）
 
-- **火绒 5 个防护项被排查实验关闭**（恶意行为监控/内存防护/文件实时监控/
-  风险软件监控/自定义防护）——**已提醒用户恢复**，别忘。
-- stage 复制把游戏目录里的 output* 产物目录也复制了一遍（单轮 ~15GB、多花
-  2-5 分钟）——优化方向：staging 跳过 output*/分类 等非引擎目录。
-- `output_fullauto1`（空壳）/`output_fullauto2`（raw=57 的半截产物 + 9764 文件
-  留在 KrkrExtract_Output/）留作证据，用户可自行删除。
+- ~~**火绒 5 个防护项被排查实验关闭**~~ ✅ **2026-11-08 用户确认已全部恢复**。
+- ~~stage 复制把游戏目录里的 output* 产物目录也复制了一遍（单轮 ~15GB、多花
+  2-5 分钟）~~ ✅ **2026-11-08 晚已修**（bugfix6，staging 跳过 output*/分类
+  非引擎目录，见文末「速度优化」节与 verified-findings §36）。
+- ~~`output_fullauto1`（空壳）/`output_fullauto2`（半截产物）~~ ✅ **2026-11-08 用户已删除**。
 - sibling 自己写的 manifest（`write_manifest` 的 `raw_dir=outdir/data`）在多包
   布局下只数第一个包——信息性、且会被 orchestrator 的 manifest 覆盖，暂不修。
 - 全量跑 ~40 分钟里 stage 复制 + KrkrExtract 完成判定的「stable 40s」×11 包
-  占大头；速度优化照旧等用户实测反馈再动。
+  占大头；stage 复制那一半已修（见下节），完成判定的 40s×11 继续等用户实测反馈再动。
+
+## 2026-11-08 晚 速度优化：stage 跳过游戏根下的非引擎目录（bugfix6）
+
+用户 2026-11-08 定「先做速度优化」（火绒 5 防护项同日确认已恢复、
+output_fullauto1/2 已删）。完整证据在 verified-findings §36，这里留接手结论。
+
+### 改了什么（`krkr_auto_extract.py` + `build_exe.py`）
+
+- **问题**（同日闭环真机实测的遗留项）：stage 构建把游戏目录**整树**搬进 ASCII
+  stage（xp3 硬链接零拷贝、其余 copy2），而游戏根下的 `output*`、`分类/` 是我们
+  自己的解包产物——`教师催眠2` 单轮多复制 **~15GB、多花 2-5 分钟**。
+- **修法**：扫游戏根**一层**，命中任一 → 整棵不进 stage，并逐目录打 `stage skip:`
+  日志显式报出：① 名字（大小写无关）以 `output` 开头（GUI 默认 `<游戏>\output` 与
+  `output11` / `output_fullauto3` 等自定名）；② 名字 == `分类`；③ 目录里有
+  `.galunpack-view` 标记（自定义名的视图也能认出）。名字常量**从 organize.py 导入**
+  （`VIEW_NAME` / `VIEW_MARK`，不抄第二份）。
+- **边界（刻意收窄）**：只看首层——产物目录是自己写的，引擎数据不会藏在里面；
+  `plugin/*.tpm`、`savedata/`、xp3 硬链接（失败退 copy2）等行为**一律不动**；
+  `--reuse-stage` 续传不受影响。
+- 构建块从 main() 内联抽成 `_build_stage_tree()`（可测）；新增
+  `tests/test_krkr_stage_skip.py` **6 条**（原因判定大小写无关 / 扫描计数与显式
+  原因 / 顶层文件不参与 / 构建跳产物保引擎件 / xp3 硬链接 st_ino 断言 / 单 exe 断言）。
+- **顺带**：BUILD_INFO 里 v0.8.2 时期写死的「真机闭环仍未复现」已过时不实（11-08
+  达成），改为「打包不做实测，状态以仓库文档为准」，并补两条 11-08 记录行。
+
+### 基线与交付
+
+- `tests/run_all.py` → **tests=833 / 0 failures / 0 errors / 12 skipped → PASS**
+  （接手基线 827 + 新增 6）；代码提交 `12aaf32`。
+- **包**：`packaging/Output/GalgameUnpacker-0.8.2-bugfix6-portable.zip`
+  （141.7 MiB，SHA256 `0d7635162a12ac402f9aabed41f27e9b41cfea04a7f4b73fa222e07ea3505a72`，
+  exe `ee316a0a…e69320`，1514 项）。校验：testzip 无损坏、README 125 行逐字相同、
+  CArchiveReader 实证 `_stage_skip_scan` / `_build_stage_tree` /
+  `STAGE_SKIP_OUTPUT_PREFIX` 与「不参与注入提取」文案进冻结模块。
+- **部署**：`D:\GalgameUnpacker\orchestrator` 已是 bugfix6（旧目录改名
+  `orchestrator_prev_bugfix5` 保留）。部署自检：`--doctor` rc=0、`--gui-smoke` rc=0、
+  冻结 `--dry-run`（教师催眠2）：KiriKiri score=90、案例签名 `6519ddb81f58` 命中、
+  `auto_feasible=False` 符合整包 krkrZ 预期。
+- **构建小坑（又踩一次，记牢）**：`build_exe.py --tag` 对**同名 zip 一律拒绝覆盖**
+  ——改完 BUILD_INFO 模板重打时必须**先删旧 zip**；第一次重打就是被这条静默拒绝，
+  `tail` 还把提示吞了，包校验（exe SHA 不一致）才暴露。
+
+### ⚠️ golden 一条待决漂移（与本轮优化无关，等用户定夺）
+
+接手基线复测时 `make_golden.py --check` 报 `Toshiue Kanojo` 漂移：
+`artemis_pfs_count` 4→3。破案链（回收站只读枚举）：当天 14:35 游戏根下的
+**`年上彼女 Claude-3-5-sonnet翻译补丁备份`** 文件夹（30.3 MB，内含
+`Toshiue_Kanojo.pfs.001` 备份副本）被删除——fact 数的是深度 3 内
+`.pfs/.000/.001/.002/.003` 文件，补丁副本也计数。引擎判定不受影响
+（Artemis 90 照旧）。**基线暂未重新生成**：文件夹在回收站可恢复——确认删除是有意的
+→ 重新生成 golden 并单独提交；还原 → 自动回到零漂移。破案细节见 §36.2。
