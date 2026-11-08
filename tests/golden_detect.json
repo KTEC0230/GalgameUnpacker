@@ -1,5 +1,27 @@
 {
   "fixtures": {
+    "advhd_game": {
+      "above_threshold": true,
+      "engine": "AdvHD",
+      "facts": {
+        "advhd_arc_count": 3
+      },
+      "guesses": [
+        {
+          "engine": "AdvHD",
+          "evidence": [
+            "+70 `AdvHD.exe` 存在（AdvHD 引擎主程序）",
+            "+20 `AdvHDLang.dll` 存在",
+            "+15 发现 3 个 `.arc` 封包"
+          ],
+          "score": 105
+        }
+      ],
+      "has_attention": false,
+      "has_warning": false,
+      "note_count": 0,
+      "score": 105
+    },
     "krkr_game": {
       "above_threshold": true,
       "engine": "KiriKiri",
@@ -57,6 +79,29 @@
       "has_warning": false,
       "note_count": 0,
       "score": 100
+    },
+    "rpgmaker_game": {
+      "above_threshold": true,
+      "engine": "RPG Maker",
+      "facts": {
+        "rpgmaker_has_encryption_key_file": true,
+        "rpgmaker_variant": "MV"
+      },
+      "guesses": [
+        {
+          "engine": "RPG Maker",
+          "evidence": [
+            "+70 NW.js 运行时（nw.dll/icudtl.dat）+ `www/` 目录",
+            "+25 `www/js/rpg_core.js` 存在 → **MV**",
+            "+10 `www/data/System.json` 存在（加密 key 的来源）"
+          ],
+          "score": 105
+        }
+      ],
+      "has_attention": false,
+      "has_warning": false,
+      "note_count": 0,
+      "score": 105
     },
     "tyrano_game": {
       "above_threshold": true,
@@ -202,7 +247,7 @@
       "engine": "Artemis",
       "expect": "Artemis",
       "facts": {
-        "artemis_pfs_count": 4
+        "artemis_pfs_count": 3
       },
       "guesses": [
         {
@@ -268,28 +313,9 @@
       "score": 105
     },
     "ラブラブお痴験バイト性活": {
-      "above_threshold": true,
-      "engine": "AdvHD",
       "expect": "AdvHD",
-      "facts": {
-        "advhd_arc_count": 18
-      },
-      "guesses": [
-        {
-          "engine": "AdvHD",
-          "evidence": [
-            "+70 `AdvHD.exe` 存在（AdvHD 引擎主程序）",
-            "+20 `AdvHDLang.dll` 存在",
-            "+15 发现 18 个 `.arc` 封包"
-          ],
-          "score": 105
-        }
-      ],
-      "has_attention": false,
-      "has_warning": false,
-      "note_count": 0,
-      "path": "D:\\HY\\tm\\ラブラブお痴験バイト性活",
-      "score": 105
+      "missing": true,
+      "path": "D:\\HY\\tm\\ラブラブお痴験バイト性活"
     },
     "兼职人妻": {
       "above_threshold": true,
@@ -338,29 +364,9 @@
       "score": 100
     },
     "常識改変学園-製品版-": {
-      "above_threshold": true,
-      "engine": "RPG Maker",
       "expect": "RPG Maker",
-      "facts": {
-        "rpgmaker_has_encryption_key_file": true,
-        "rpgmaker_variant": "MV"
-      },
-      "guesses": [
-        {
-          "engine": "RPG Maker",
-          "evidence": [
-            "+70 NW.js 运行时（nw.dll/node.dll/icudtl.dat）+ `www/` 目录",
-            "+25 `www/js/rpg_core.js` 存在 → **MV**",
-            "+10 `www/data/System.json` 存在（加密 key 的来源）"
-          ],
-          "score": 105
-        }
-      ],
-      "has_attention": false,
-      "has_warning": false,
-      "note_count": 0,
-      "path": "D:\\HY\\常識改変学園-製品版-",
-      "score": 105
+      "missing": true,
+      "path": "D:\\HY\\常識改変学園-製品版-"
     },
     "教师催眠1": {
       "above_threshold": true,

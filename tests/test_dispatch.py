@@ -96,8 +96,13 @@ def test_fixture_matches_golden(fixture: Path) -> None:
 
 
 def test_fixture_count() -> None:
-    """fixture 数量变了要显式确认（防止误删回归样本）。"""
-    assert len(_fixture_dirs()) == 6
+    """fixture 数量变了要显式确认（防止误删回归样本）。
+
+    2026-11-08：6 → 8，新增 rpgmaker_game / advhd_game——两个引擎的唯一真实
+    样本（常識改変学園-製品版- / ラブラブお痴験バイト性活）从盘上消失后，
+    用可重建 fixture 顶住 test_detect_covers_all_implemented_engines 护栏。
+    """
+    assert len(_fixture_dirs()) == 8
 
 
 def test_golden_covers_all_fixtures() -> None:

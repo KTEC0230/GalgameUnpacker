@@ -2601,3 +2601,36 @@ co_consts 含「不参与注入提取」「解包产物目录」。
 **教训**：golden 漂移先查「磁盘上的样本变了没」（mtime + 回收站），再查代码；
 `artemis_pfs_count` 这类计数型 fact 对目录内容敏感，样本目录里放任何
 `.000/.001` 类文件都会进基线。
+
+### 36.3 收口（同日晚）：基线重建 + 两个引擎补 fixture
+
+用户确认 Toshiue 补丁备份删除是有意清理。重新生成基线时发现**另外两个真实样本
+目录也已从盘上消失**——`D:\HY\tm\ラブラブお痴験バイト性活`（AdvHD，整个
+`D:\HY\tm` 都空了）与 `D:\HY\常識改変学園-製品版-`（RPG Maker MV）。两作都是
+2026-10-26 全链 rc=0 的已交付样本；**回收站无痕迹**（普通删除会进回收站，这两个
+是永久删除或被移动），无法从回收站确认意图，按「My Best Deal 消失」先例从基线
+移除。
+
+**连带暴露一个好护栏**：这两个样本各自是其引擎在 golden 里唯一的实测代表，移除后
+`test_detect_covers_all_implemented_engines`（「ADVICE 宣称支持的引擎必须有样本
+真判出来」）立刻红——先 RPG Maker、后 AdvHD，分两次暴露。修法不是放松护栏，
+是给 `_fixtures/` 补可重建合成样本：
+
+- `rpgmaker_game`：`nw.dll`/`icudtl.dat`/`locales/*.pak` + `www/js/rpg_core.js`
+  + `www/data/System.json`（105 分，rpgmaker_nwjs+variant+keyfile 全命中）；
+- `advhd_game`：`AdvHD.exe` + `AdvHDLang.dll` + 3 个 `.arc`（105 分，
+  advhd_exe+lang+arc 全命中）。
+
+信号面逐条照 rules/engines.json 写；fixture 6→8，`test_fixture_count` 的数量
+断言同步更新（它存在的意义就是逼你显式确认数量变化）。
+
+- 基线：**8 fixture + 10 真实样本**，`--check` 零漂移（`REAL_SAMPLES` 保留两个
+  消失条目，`--check` 对缺失样本报「跳过」而非失败——找回游戏放回原位会自动重纳）。
+- 全量 `tests=835 / 0 failures / 0 errors / 15 skipped → PASS`。
+
+**教训**：① golden 的真实样本条目会随用户磁盘清理消失——「宣称支持 N 引擎」的
+护栏不能只靠真实样本撑，每个引擎最终都该有一个 fixture 代表（Unity/KiriKiri/
+Ren'Py/Tyrano/未知 已有，RPG Maker/AdvHD 本次补上；**Artemis/ExHIBIT/CatSystem2/
+Yu-Ris 仍只有真实样本代表，下次盘面变化同样的红会再出现**）；② 回收站是判
+「误删 vs 有意清理」的一手证据，但**永久删除不走回收站**，证据链会断——
+拿不到证据就按先例处理并在文档里写明恢复路径。

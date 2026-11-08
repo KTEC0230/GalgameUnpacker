@@ -61,8 +61,7 @@
 >   PyInstaller 的 Tk 探测一次过。包内 BUILD_INFO 记的提交号是**打包那一刻**的 HEAD；
 >   最新提交号以 `git log -1` 为准。**提交一律显式 add，禁用 `git add -A`。**
 > - **真机 `--allow-gui` 全自动已闭环（11-08 03:0x，待办 3 ✅）**；当前未闭环项：
->   Full Unpack 泛化（只对教师催眠2 验证过，待办 4）、案例库扩容（待办 5）、
->   golden 一条待决漂移（Toshiue `artemis_pfs_count` 4→3，见文末「速度优化」节）。
+>   Full Unpack 泛化（只对教师催眠2 验证过，待办 4）、案例库扩容（待办 5）。
 > - **能力面**：9 条引擎链路可用；加密 KiriKiri 需 `--allow-gui`（要真实桌面）或人工拖拽 +
 >   `--reuse-raw` 收尾。其余引擎判得出但无链路（退出码 2）。
 >
@@ -115,7 +114,8 @@
 **知识产物（长期保留）**
 - `AGENTS.md` / `verified-findings.md` / `galgame-unpack-decision-tree.md` —— 结论、证据、规则
 - `galgame_dispatch.py` —— dry-run 分派器（主产物）
-- `_fixtures/` —— 回归样例（`_fixtures/make_fixtures.py` 可重建，6 个 fixture）
+- `_fixtures/` —— 回归样例（`_fixtures/make_fixtures.py` 可重建，8 个 fixture；
+  2026-11-08 新增 rpgmaker_game / advhd_game 顶住引擎覆盖护栏）
 - `cases/` —— **案例库**（12 个 case + `index.json` 9 个签名 + `_failures_raw.json` / `_docs_meta.json` 原始素材），见下方专节
 - `rules/` —— 引擎指纹**规则表**（`engines.json` + 解释器 `rules/__init__.py`，含命中信号 `fired_ids`）
 - `tests/` —— 全量测试 + `golden_detect.json` 基线（`make_golden.py --check` 查漂移）
@@ -259,9 +259,11 @@ Ren'Py 侧：`_rpa_stage` / `_rpa_patch_stage` / `_rpa_arch.txt` / `_rpa_patch.t
   - 产物一律落 `<仓库>/_extracted/<游戏名>/`，**不写进游戏目录**（会污染原包，且加密 KiriKiri 链
     要 stage 纯 ASCII 副本，混在一起分不清谁产生的）。
 - 引擎判定：**10 条引擎规则**（Unity / KiriKiri / Ren'Py / Tyrano-Electron / RPG Maker / AdvHD / Yu-Ris / EXHIBIT / CatSystem2 / Artemis）。
-  基线由两处共同锁住：`_fixtures/make_fixtures.py` 重建的 **6 个 fixture** + 现场 **11 个真实样本**
-  （`My Best Deal` 已从磁盘消失），全部与 `tests/golden_detect.json`（逐字锁定 engine/score/evidence/facts）一致 ——
-  跑 `python tests/make_golden.py --check` 应输出零漂移；全量测试 **541 passed / 9 skipped**（`python -m pytest tests -q`）。
+  基线由两处共同锁住：`_fixtures/make_fixtures.py` 重建的 **8 个 fixture** + 现场 **10 个真实样本**
+  （`My Best Deal` / `ラブラブお痴験バイト性活` / `常識改変学園-製品版-` 已从磁盘消失，
+  后两个 2026-11-08 用户清理所致，`REAL_SAMPLES` 条目保留、缺失即跳过），
+  全部与 `tests/golden_detect.json`（逐字锁定 engine/score/evidence/facts）一致 ——
+  跑 `python tests/make_golden.py --check` 应输出零漂移；基线随代码演进重生成，见文末「golden 漂移收口」。
 - 用户的 `D:\HY\pork社` 7 个游戏经 **GUI 实测全部可静态提取**。
 - ✅ **三条产出线（视频 / 图片 / 音频）全部有实测验证过的样本** —— 见下表。
 
@@ -2083,12 +2085,22 @@ output_fullauto1/2 已删）。完整证据在 verified-findings §36，这里�
   ——改完 BUILD_INFO 模板重打时必须**先删旧 zip**；第一次重打就是被这条静默拒绝，
   `tail` 还把提示吞了，包校验（exe SHA 不一致）才暴露。
 
-### ⚠️ golden 一条待决漂移（与本轮优化无关，等用户定夺）
+### golden 漂移收口（同日，用户确认清理 → 基线重建 + fixture 补位）
 
-接手基线复测时 `make_golden.py --check` 报 `Toshiue Kanojo` 漂移：
-`artemis_pfs_count` 4→3。破案链（回收站只读枚举）：当天 14:35 游戏根下的
-**`年上彼女 Claude-3-5-sonnet翻译补丁备份`** 文件夹（30.3 MB，内含
-`Toshiue_Kanojo.pfs.001` 备份副本）被删除——fact 数的是深度 3 内
-`.pfs/.000/.001/.002/.003` 文件，补丁副本也计数。引擎判定不受影响
-（Artemis 90 照旧）。**基线暂未重新生成**：文件夹在回收站可恢复——确认删除是有意的
-→ 重新生成 golden 并单独提交；还原 → 自动回到零漂移。破案细节见 §36.2。
+接手基线复测时 `make_golden.py --check` 报漂移，破案与收口（细节 §36.2/§36.3）：
+
+1. `Toshiue Kanojo` 的 `artemis_pfs_count` 4→3——用户当天 14:35 删除了游戏根下的
+   「年上彼女 Claude-3-5-sonnet翻译补丁备份」文件夹（内含 `.pfs.001` 备份副本，
+   fact 数到它）。**用户确认有意删除**。
+2. 重新生成时发现**另外两个真实样本目录也从盘上消失且不在回收站**
+   （永久删除或被移动）：`D:\HY\tm\ラブラブお痴験バイト性活`（AdvHD）与
+   `D:\HY\常識改変学園-製品版-`（RPG Maker MV）。两作都是 10-26 全链 rc=0 的
+   已交付样本。按「My Best Deal 消失」先例从基线移除；`REAL_SAMPLES` 条目保留，
+   `--check` 对缺失样本报「跳过」——找回游戏放回原位会自动重新纳入。
+3. **连带修复**：这两个样本各自是其引擎在 golden 里的唯一代表，移除后护栏
+   `test_detect_covers_all_implemented_engines` 红（宣称支持但无样本可判）。
+   给 `_fixtures/` 新增 **rpgmaker_game / advhd_game** 两个可重建合成样本
+   （105 分命中，信号面照 rules/engines.json），护栏从此不依赖用户的盘。
+   fixture 6 → **8**。Artemis / ExHIBIT / CatSystem2 / Yu-Ris 仍只有真实样本代表。
+
+基线现状：**8 fixture + 10 真实样本**零漂移；全量 `tests=835 / 0 / 0 / 15 skipped → PASS`。
