@@ -63,6 +63,7 @@ import manifest                        # noqa: E402
 import organize                        # noqa: E402  （按类型归档：清单 + 硬链接视图，见 organize.py）
 import manual                          # noqa: E402  （人工介入方案：失败时给可执行步骤，见 manual.py）
 import faillog                         # noqa: E402  （失败日志：写软件根目录，与产物解耦）
+import diagnostics                     # noqa: E402  （诊断包：失败时给 Agent 的第一手材料）
 import rpa_tool                        # noqa: E402
 import toolbridge as tb                # noqa: E402
 import rpa_extract_organized           # noqa: E402  （兄弟链路一律 in-process 调 main()，见 _run_sibling）
@@ -2680,13 +2681,23 @@ def _finish_failure(ctx: Ctx, stages: list[Stage], engine: str | None,
     man["total_seconds"] = round(time.time() - t_all, 1)
     man["stages"] = [s.as_dict() for s in stages]
 
+    # 诊断包（新功能 P0，2026-11-09）：失败现场的自包含 JSON，落
+    # `<out>/_work/diagnostic/`。构建/写盘内部永不抛——它写不出去顶多少一份
+    # 善后材料，绝不能把一次失败变成两次失败。
+    diag = diagnostics.build(error_code=error, engine=engine, game_dir=ctx.game_dir,
+                             out_dir=ctx.out_dir, stages=man["stages"],
+                             source=man.get("source"),
+                             case_match=(man.get("source") or {}).get("case_match"))
+    diag_path = diagnostics.write_package(diag, ctx.out_dir)
+
     plan = manual.plan_for(error, engine=engine, game_dir=ctx.game_dir,
                            out_dir=ctx.out_dir, raw_dir=ctx.raw_dir,
                            png_dir=ctx.png_dir, prog=_prog_name(),
                            tools=_manual_tools(), stages=man["stages"],
                            case_hint=_case_krkr_hint(ctx.case_match),
                            allow_gui=ctx.allow_gui,
-                           backup_dir=ctx.overwrite_backup)
+                           backup_dir=ctx.overwrite_backup,
+                           diagnostic={"path": str(diag_path)} if diag_path else None)
     if plan is not None:
         man["manual"] = plan.as_dict()
         # 终端区块 GUI 用户看不到（worker 的 stdout 不进日志面板），

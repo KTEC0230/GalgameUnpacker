@@ -99,14 +99,18 @@ def _q(p: Path | str) -> str:
     return f'"{s}"' if " " in s else s
 
 
-def plan_for(error: str, *, engine: str | None, game_dir: Path, out_dir: Path,
-             raw_dir: Path, png_dir: Path, prog: str = "orchestrator.exe",
-             tools: Mapping[str, str] | None = None,
-             stages: list[dict] | None = None,
-             case_hint: str | None = None,
-             allow_gui: bool = False,
-             backup_dir: Path | str | None = None) -> ManualPlan | None:
+def _plan_for_core(error: str, *, engine: str | None, game_dir: Path, out_dir: Path,
+                   raw_dir: Path, png_dir: Path, prog: str = "orchestrator.exe",
+                   tools: Mapping[str, str] | None = None,
+                   stages: list[dict] | None = None,
+                   case_hint: str | None = None,
+                   allow_gui: bool = False,
+                   backup_dir: Path | str | None = None) -> ManualPlan | None:
     """按失败码给一份人工方案；没有合适方案返回 None（不要硬凑）。
+
+    `diagnostic`：诊断包（diagnostics.build 的产物，P0）——里面的 `path` 会作为
+    needs 第一条挂进方案（「整段交给 Agent 即可开工」）。None 时行为与旧版
+    完全一致（test_manual 12 条的契约不动）。
 
     `case_hint`：案例库证据提示（P1-① A 案，2026-11-05 用户定）——
     同签名案例曾用 krkr_auto_extract 全自动成功时，把「加 --allow-gui 可自动跑」
@@ -283,6 +287,42 @@ def plan_for(error: str, *, engine: str | None, game_dir: Path, out_dir: Path,
         )
 
     return None
+
+
+def _with_diagnostic(plan: ManualPlan | None,
+                     diagnostic: Mapping | None) -> ManualPlan | None:
+    """把诊断包挂进方案：needs 第一条 = 「整段交给 Agent 即可开工」。
+
+    diagnostic 里只有 `path` 是方案关心的（包内容 Agent 自己读）；没有 path
+    或没有方案时原样返回。**放 needs 不放 summary**：summary 在 GUI 只显示
+    前几步就截断，路径是要被复制的东西，得在完整列表里。
+    """
+    if plan is None or not diagnostic:
+        return plan
+    path = diagnostic.get("path")
+    if not path:
+        return plan
+    line = f"诊断包（整段交给 Agent 即可开工）：{path}"
+    if line in plan.needs:
+        return plan
+    from dataclasses import replace
+    return replace(plan, needs=(line, *plan.needs))
+
+
+def plan_for(error: str, *, engine: str | None, game_dir: Path, out_dir: Path,
+             raw_dir: Path, png_dir: Path, prog: str = "orchestrator.exe",
+             tools: Mapping[str, str] | None = None,
+             stages: list[dict] | None = None,
+             case_hint: str | None = None,
+             allow_gui: bool = False,
+             backup_dir: Path | str | None = None,
+             diagnostic: Mapping | None = None) -> ManualPlan | None:
+    """plan_for 的对外入口：核心分派（_plan_for_core）+ 诊断包挂钩。"""
+    plan = _plan_for_core(error, engine=engine, game_dir=game_dir, out_dir=out_dir,
+                          raw_dir=raw_dir, png_dir=png_dir, prog=prog, tools=tools,
+                          stages=stages, case_hint=case_hint, allow_gui=allow_gui,
+                          backup_dir=backup_dir)
+    return _with_diagnostic(plan, diagnostic)
 
 
 def _stage_detail(stages: list[dict] | None, name: str) -> str:

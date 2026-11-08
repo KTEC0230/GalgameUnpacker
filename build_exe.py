@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -187,11 +188,29 @@ def check() -> int:
     return 0
 
 
+def agent_contract_file() -> Path:
+    """生成 Agent 契约文件（`新功能.md` P0）：sandbox.actions 注册表 → SPEC 下 JSON。
+
+    数据是**代码生成**的（注册表在 sandbox/actions.py），这里只负责落盘——
+    与 version_info.txt 同一模式：构建时产物，不进 git。
+    """
+    from sandbox.actions import generate_contract
+    out = SPEC / "agent_contract.json"
+    payload = json.dumps(generate_contract(), ensure_ascii=False, indent=2)
+    _old = out.read_text(encoding="utf-8") if out.is_file() else None
+    if _old != payload:                                   # 幂等：内容没变不摸 mtime
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(payload, encoding="utf-8")
+    return out
+
+
 def build(no_bundle_tools: bool = False) -> int:
     args, missing = data_args()
     if missing:
         print("数据文件缺失，先补齐再构建：", ", ".join(missing), file=sys.stderr)
         return 1
+    contract = agent_contract_file()
+    args += ["--add-data", f"{contract};."]
     cmd = [sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean",
            "--onedir", "--name", "orchestrator",
            "--distpath", str(DIST), "--workpath", str(BUILD), "--specpath", str(SPEC),
