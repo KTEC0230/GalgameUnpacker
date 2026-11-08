@@ -24,6 +24,7 @@
 
 > **📌 当前状态（2026-11-08 深夜收口，★今日战果：bugfix6→11 六个包、4 部游戏真机闭环、8 个真机缺口修复★）**
 > - **交付**：GitHub Release **`v0.8.2`**（`687f4cd3…f26de05e983d`，asset `717312891`）**原样未动**；
+>   **2026-11-08 深夜已发布 [v0.8.2-bugfix11](https://github.com/KTEC1200/GalgameUnpacker/releases/tag/v0.8.2-bugfix11)**（prerelease，id 438296258，SHA256 `b848160b…cfc43de` 三方核对一致，说明含 bugfix6→11 全部改动）；
 >   本地迭代全部走 `--tag` 本地包（下方 bugfix5→11），`version.py` / README 只改过
 >   产物位置一行（契约测试锁着版本与包名）。
 > - **✅ 当前本地包 bugfix11（用这个，已部署标准路径 `D:\GalgameUnpacker\orchestrator`，2026-11-08 深夜）**：
