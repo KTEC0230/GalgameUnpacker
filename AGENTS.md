@@ -26,7 +26,13 @@
 >   SHA256 `687f4cd3…f26de05e983d`），已发布到 GitHub Release **`v0.8.2`**
 >   <https://github.com/KTEC1200/game-get/releases/tag/v0.8.2>（仅 1 个附件，asset `717312891`）。
 >   **本轮不改 Release 附件、不动 `version.py` / README。**
-> - **✅ 当前本地包 bugfix7（用这个，已部署标准路径，2026-11-08 晚）**：
+> - **✅ 当前本地包 bugfix8（用这个，已部署标准路径，2026-11-08 深夜）**：
+>   `packaging/Output/GalgameUnpacker-0.8.2-bugfix8-portable.zip`
+>   （141.9 MiB，SHA256 `b45c0dd6…72258d`），BUILD_INFO 标 `bugfix8`；
+>   内容 = **krkr 拖拽源头三处加固**（`_find_item_point` 扫条目矩形 + Explorer
+>   TOPMOST 抬窗与固定摆放 `EXPLORER_PLACE` + 收尾清理改 finally 防进程泄漏），
+>   全部经 `堕落妻子` 真机闭环实证（待办 4 泛化第一个新样本，rc=0 零失败）。
+> - **历史本地包 bugfix7（产物出库 GalgameOutput，2026-11-08 晚）**：
 >   `packaging/Output/GalgameUnpacker-0.8.2-bugfix7-portable.zip`
 >   （141.9 MiB，SHA256 `cf1f81af…f89ed81`），BUILD_INFO 标 `bugfix7`；
 >   内容 = **GUI 默认产物出库**：`<游戏所在盘>\GalgameOutput\<游戏名>`，不进游戏库
@@ -2146,3 +2152,35 @@ output_fullauto1/2 已删）。完整证据在 verified-findings §36，这里�
   CArchiveReader 实证 gui 模块含 `GalgameOutput`。
 - 部署：标准路径已是 bugfix7；旧 bugfix6 部署目录已删（zip 有档，不留 prev 目录）；
   doctor / gui-smoke / 冻结 dry-run（教师催眠2 KiriKiri 90）全过。
+
+## 2026-11-08 深夜 `堕落妻子` 全自动闭环（bugfix8）：Full Unpack 泛化第一个新样本
+
+用户拍板拿 `pork社\堕落妻子`（2 包，data.xp3 1.75GB + patch.xp3 1.6MB，krkrZ 全加密）
+实测 bugfix7。两轮真机失败暴露三个真缺口，全部修进 bugfix8，第三轮 **rc=0 全链零失败**：
+
+| 阶段 | 结果 |
+|---|---|
+| extract（GUI 自动化） | 148.65s，raw **4040** 文件 |
+| postprocess | 1085 个 .tlg → 1085 PNG |
+| **verify** | **图片 1626/1626、音频 2320/2320、视频 0/0，失败 0**，媒体 305.4 分钟 |
+| organize | 硬链接 4040 失败 0；产物在 `D:\GalgameOutput\堕落妻子`（新出库布局首次实战） |
+
+**三轮的失败与修复**（详见 verified-findings §38）：
+
+1. **第一轮**：拖拽**源头**死——游戏致命框（#32770，NO_AUTO_DISMISS 刻意留着）压住
+   Explorer 条目中心，旧代码只试中心点、裸 `SetForegroundWindow` 抬 Explorer 被前台锁
+   拒、重试只重取同一矩形 → assert 死。修复：`_find_item_point()` 扫整块条目矩形
+   （中心优先，24px 网格）+ Explorer 也走 `raise_ui_window()` TOPMOST 连招 + 三级
+   递进重试（扫点→抬窗→挪窗）。
+2. **第二轮**：源点活了，死在**终点**——Explorer 抬到最前后把 KrkrExtract 落点区全盖住
+   （采样 899 点 0 命中）。起点终点必须同屏：新增 `EXPLORER_PLACE`，把 Explorer 固定
+   摆到屏幕左上角 (0,0,1200,860)，给右侧 KrkrExtract 让出落点区。
+3. **两轮都泄漏 stage 进程**：失败路径跳过收尾清理，泄漏的 `game.exe` 占住部署目录，
+   下一次部署改名 Permission denied（Transient 句柄 + Move-Item 有先例）。修复：main()
+   收尾清理改放 **finally**（顺带修掉 index-carve 兜底 early_done 提前 return 跳过清理
+   的老洞）。第三轮结束验证：无泄漏进程。
+
+**待办 4 里程碑**：Full Unpack 从「只对教师催眠2 有效」变成「两个真机样本」。
+下一部照旧流程即可（温泉蒸汽人妻 3 包 / aniyome 11 包 / Doinaka 9 包 / 昼下がり×2）。
+新案例的 manifest 在 `D:\GalgameOutput\堕落妻子\manifest.json`（产物出库后
+`build_cases.py --from-manifests` 的扫描路径要跟着改，下次动案例库时处理）。

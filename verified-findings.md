@@ -2680,3 +2680,68 @@ Yu-Ris 仍只有真实样本代表，下次盘面变化同样的红会再出现*
 SHA256 `cf1f81afd433516018f6e166384a35d48da07137f5df6bc57c5430071f89ed81`），
 CArchiveReader 实证 gui 模块含 `GalgameOutput`；部署标准路径，旧 bugfix6 部署目录
 删除（zip 留档），doctor / gui-smoke / 冻结 dry-run 全过。
+
+## 38. `堕落妻子` 泛化实测：拖拽源头三处缺口与修复（2026-11-08 深夜，bugfix8）
+
+`教师催眠2` 闭环后第一次拿**别的游戏**跑 `--allow-gui` 全自动——三处一直存在但
+没被触发的缺口连续暴露。泛化验证的价值在这一轮体现得淋漓尽致。
+
+### 38.1 第一轮：拖拽**源头**被致命框压住（26s 失败）
+
+现场：`data.xp3: item center=(1698,654) under cls=#32770 (retry 0..3)` →
+`AssertionError: item point blocked`。
+
+- **旧代码只试条目中心点**。Explorer 条目矩形约 200×250px，是一个面；
+  游戏致命框（#32770，`NO_AUTO_DISMISS` 刻意留着，**绝不能点**）恰好压住中心时，
+  面上其余点往往还露着。
+- **抬 Explorer 用的是裸 `SetForegroundWindow`**——11-06 §五层加固给 KrkrExtract
+  窗口做了 `raise_ui_window()`（TOPMOST→NOTOPMOST，前台锁下也能抬），但拖拽源头
+  （Explorer）没享受同款待遇，前台锁下静默失效。
+- **重试只会重取同一个矩形**：条目在屏幕上的位置不会因为重试而变，4 次全灭。
+
+**修复**（`_find_item_point(rect)` + `_run_inject` 重写源点段）：
+中心优先 → 24px 网格扫整块矩形（`WindowFromPoint` 必须命中
+`CabinetW`/`DirectUIHWND`）；失败则 `raise_ui_window(exp)` → 重取矩形 →
+`_place_explorer(exp)` 挪窗 → 再取，三级递进；报错带 `_blockers_detail`
+（谁挡的、挡了几点，不许塌缩成空 dict）。
+
+### 38.2 第二轮：源点活了，Explorer 盖住全部落点（~90s 失败）
+
+现场：`资源管理器窗口盖住了 KrkrExtract 的全部落点区域…采样 899 点：
+主窗口空白 0…DirectUIHWND ×515`（`ensure_drop_point` 的富诊断如实报出）。
+
+TOPMOST 连招把 Explorer **可靠**抬到最前后，它默认的居中大窗正好压住
+KrkrExtract 全部空白点。旧代码靠裸 SetForegroundWindow「碰巧」失败反而没盖这么死。
+**起点与终点必须同时可见**——布局要显式安排。
+
+**修复**：`EXPLORER_PLACE = (0, 0, 1200, 860)`，每包打开 Explorer 后
+`_place_explorer()` 摆到屏幕左上角（不动 Z 序），给右侧的 KrkrExtract
+（实测 rect (818,266)-(2060,1436)）让出整片落点区。
+
+### 38.3 两轮共同的隐藏问题：失败路径泄漏 stage 进程
+
+两轮失败后 `stage\auto\game.exe` 都活着（注入失败→异常→收尾清理被跳过），
+泄漏进程占住部署目录：第一次重部署 `mv` 直接 Permission denied（transient 句柄，
+PowerShell `Move-Item` 可过——与 11-07 先例一致）。index-carve 兜底路径
+`early_done` 提前 return 也一直跳过清理（老洞）。
+
+**修复**：`main()` 收尾清理（close_all_explorers + taskkill stage 进程）移入
+**finally**，任何退出路径都执行。第三轮结束实测：无泄漏进程。
+
+### 38.4 闭环数字（bugfix8，第三轮，610.1s rc=0）
+
+`pork社\堕落妻子`（krkrZ 2 包）→ raw 4040 → 图片 1626/1626、音频 2320/2320、
+视频 0/0 零失败，媒体 305.4 分钟，organize 硬链接 4040 失败 0；产物首次落
+`D:\GalgameOutput\堕落妻子`（§37 出库布局）。**待办 4：Full Unpack 从 1 个样本
+变成 2 个。**
+
+测试：`tests/test_krkr_item_point.py` 10 条（中心被压找网格点 / 整块压住报 blocker /
+退化矩形 / WindowFromPoint=0 / DirectUIHWND 口径 / 端到端从网格点拖出 /
+place 固定摆放 / 失败与 early_done 两条路径都收进程）。
+全量 `tests=844 / 0 failures / 0 errors → PASS`，golden 零漂移。
+
+**教训**：① 替身测试全绿的链路换一部游戏就能死——窗口几何没有两个游戏相同，
+GUI 自动化的每一侧（源点、终点、Z 序、布局）都要显式安排，不能靠默认值碰巧；
+② 失败路径的清理必须放 finally，异常路径泄漏的进程会在**下一次部署**时变成
+莫名其妙的 Permission denied；③ `ensure_drop_point` 的富诊断（38.2 现场）
+让第二轮失败 30 秒定位——11-06 那轮补的诊断值回票价。

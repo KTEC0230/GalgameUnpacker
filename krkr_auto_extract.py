@@ -36,6 +36,7 @@ SW_RESTORE = 9
 HWND_TOPMOST = -1
 HWND_NOTOPMOST = -2
 SWP_NOSIZE, SWP_NOMOVE, SWP_SHOWWINDOW = 0x0001, 0x0002, 0x0040
+SWP_NOZORDER = 0x0004
 # SetWindowPos 的第二个参数是 HWND。不声明 argtypes 时 ctypes 按 c_int 传参，
 # 64 位下 (HWND)-1 会被截成 0xFFFFFFFF，TOPMOST 静默失效 —— 这条必须显式声明。
 user32.SetWindowPos.argtypes = [wintypes.HWND, wintypes.HWND,
@@ -1072,6 +1073,58 @@ def _enable_full_unpack_or_die(pid):
                   "可设 KRKR_ALLOW_NO_FULL_UNPACK=1 跳过本检查（产物缺内容的风险自负）。")
 
 
+#: 拖拽源（Explorer 条目）可接受的窗口类：资源管理器框架或其列表视图宿主。
+#: 与 _run_inject 旧判断保持同一口径（"CabinetW" / "DirectUIHWND"）。
+_EXPLORER_CLASSES = ("CabinetW", "DirectUIHWND")
+
+#: Explorer 拖拽源窗口的**固定摆放**：(x, y, 宽, 高) = 屏幕左上角、限定大小。
+#: 起点与终点必须同时可见：抬窗修好源点后（TOPMOST 连招），Explorer 若保持默认
+#: 居中大窗，会把 KrkrExtract 的落点区全部盖住（2026-11-08 堕落妻子第二轮真机：
+#: 采样 899 点 0 命中）。挪到左上角给右侧的 KrkrExtract 让出落点区。
+EXPLORER_PLACE = (0, 0, 1200, 860)
+
+
+def _place_explorer(exp):
+    """把 Explorer 摆到 EXPLORER_PLACE（不动 Z 序），条目跟着窗口走。"""
+    x, y, cx, cy = EXPLORER_PLACE
+    user32.SetWindowPos(exp, 0, x, y, cx, cy, SWP_NOZORDER)
+
+
+def _find_item_point(rect):
+    """在 Explorer 条目矩形内找一个 ``WindowFromPoint`` 命中 Explorer 的拖拽起点。
+
+    中心点优先（历史行为），被压就按 24px 网格扫整块矩形——条目是一个面，
+    只试中心太死板：游戏致命框（``NO_AUTO_DISMISS`` 刻意留着，**绝不能点**）压住
+    中心时，面上其余点往往还露着（2026-11-08 `堕落妻子` 真机实测）。
+
+    返回 ``(point | None, blockers, sampled)``：point 为 (x, y)，失败时 blockers
+    汇总每类遮挡窗口的命中次数（诊断进报错，别让「谁挡着」塌缩成空 dict）。
+    """
+    left, top, right, bottom = rect
+    blockers: dict[str, int] = {}
+    if right <= left or bottom <= top:
+        blockers["rect_invalid"] = 1
+        return None, blockers, 0
+    cx, cy = (left + right) // 2, (top + bottom) // 2
+    cands = [(cx, cy)]
+    step = 24
+    for y in range(top + step // 2, bottom, step):
+        for x in range(left + step // 2, right, step):
+            if (x, y) != (cx, cy):
+                cands.append((x, y))
+    sampled = 0
+    for (x, y) in cands:
+        sampled += 1
+        under = user32.WindowFromPoint(wintypes.POINT(x, y))
+        cls = ctypes.create_unicode_buffer(64)
+        user32.GetClassNameW(under, cls, 64)
+        if any(c in cls.value for c in _EXPLORER_CLASSES):
+            return (x, y), blockers, sampled
+        key = cls.value or "(WindowFromPoint 返回 0)"
+        blockers[key] = blockers.get(key, 0) + 1
+    return None, blockers, sampled
+
+
 def _run_inject(stage, stage_exe, args, only):
     """KRKR_MODE=inject：旧注入路径原样搬入（游戏 + Lite CLI 注入）。
 
@@ -1167,7 +1220,8 @@ def _run_inject(stage, stage_exe, args, only):
         time.sleep(3.5)
         exp = find_explorer_by_title_hint(os.path.basename(stage))
         assert exp, "explorer window not found for %s" % fn
-        user32.SetForegroundWindow(exp)
+        raise_ui_window(exp)      # 前台锁下裸 SetForegroundWindow 会被静默拒绝（§五层加固同款）
+        _place_explorer(exp)      # 摆到左上角：起点终点必须同屏，别盖住 KrkrExtract 落点区
         time.sleep(1.5)
         # UIA (use the CURRENT explorer hwnd: explorer may recreate it, so re-find until stable)
         rect = None
@@ -1181,24 +1235,29 @@ def _run_inject(stage, stage_exe, args, only):
                 break
             time.sleep(1.2)
         assert rect, "UIA item rect not found for %s" % fn
-        ix, iy = (rect[0] + rect[2]) // 2, (rect[1] + rect[3]) // 2
-        # 落点/起点遮挡防御：被挡时前置 Explorer 重取矩形重试（最多 4 次）
-        ok_point = False
-        for retry in range(4):
-            under = user32.WindowFromPoint(wintypes.POINT(ix, iy))
-            ucls = ctypes.create_unicode_buffer(64)
-            user32.GetClassNameW(under, ucls, 64)
-            log("%s: item center=(%d,%d) under cls=%s (retry %d)" % (fn, ix, iy, ucls.value, retry))
-            if "CabinetW" in ucls.value or "DirectUIHWND" in ucls.value:
-                ok_point = True
+        # 拖拽起点：中心优先 → 扫整块条目矩形 → 抬窗（TOPMOST 连招）→ 挪 Explorer 重取。
+        # 游戏致命框是 NO_AUTO_DISMISS 刻意留着的，**绝不能点**——只能绕（挪窗/换点）。
+        ix = iy = None
+        item_blockers: dict[str, int] = {}
+        for attempt in range(3):
+            (ix, iy), item_blockers, _sampled = _find_item_point(rect)
+            if ix is not None:
                 break
-            user32.SetForegroundWindow(exp)
-            time.sleep(1.2)
+            log("%s: item rect 全被遮挡 %s，抬窗/挪窗后重试 (%d/3)"
+                % (fn, item_blockers, attempt + 1))
+            raise_ui_window(exp)
+            time.sleep(1.0)
             r = uia_item_rect(exp, fn)
+            if not r:
+                # 抬窗也救不回来就把 Explorer 摆到固定位置（条目跟着窗口走）再取一次
+                _place_explorer(exp)
+                time.sleep(1.0)
+                exp = find_explorer_by_title_hint(os.path.basename(stage)) or exp
+                r = uia_item_rect(exp, fn)
             if r:
                 rect = r
-                ix, iy = (rect[0] + rect[2]) // 2, (rect[1] + rect[3]) // 2
-        assert ok_point, "item point blocked for %s" % fn
+        assert ix is not None, "item point blocked for %s: %s" % (
+            fn, _blockers_detail(item_blockers))
         dismiss_dialogs(pid)          # 每包前再清一次：游戏可能又弹了提示
         # Explorer 前置后复核终点：盖住了就在当前 Z 序里换个仍可见的空白点。
         tx, ty = ensure_drop_point(ui, (tx, ty))
@@ -1335,50 +1394,54 @@ def main(argv: list[str] | None = None) -> int:
     #     时候：NO_AUTO_DISMISS 默认开启，带弹窗拖包；要旧行为设 KRKR_NO_AUTO_DISMISS=0。
     #  ② stage 别落在 D:\K\deepseek 树里（根上有 Everyone DENY DC 等神秘 ACE，
     #     §32 连坐降权）——源码态用 KRKR_STAGE_ROOT 指到树外；部署态默认就在树外。
-    per_archive, early_done = _run_inject(stage, stage_exe, args, only)
-    if early_done:
+    #  ③ 收尾清理放 **finally**：失败路径（比如拖拽源点被挡的 assert）原本会跳过
+    #     清理，泄漏的 stage game.exe 占着部署目录导致下一次部署改名失败
+    #     （2026-11-08 堕落妻子真机）。index-carve 兜底路径的提前 return 同样漏清理。
+    try:
+        per_archive, early_done = _run_inject(stage, stage_exe, args, only)
+        if early_done:
+            return 0
+
+        outdir = os.path.join(stage, "KrkrExtract_Output")
+        total, by_ext, size_total = count_files(outdir)
+        log("ALL DONE: %d files %.1f MB" % (total, size_total / 1048576.0))
+        log("by_ext %s" % json.dumps(by_ext, sort_keys=True))
+        log("output at: %s" % outdir)
+
+        # ---- manifest（software-plan §2 契约，raw/final/converted 三段式）----
+        manifest_path = args.manifest
+        if manifest_path is None and args.out:
+            manifest_path = os.path.join(args.out, "manifest.json")
+        if manifest_path:
+            try:
+                man, counts_block = write_manifest(outdir, game_dir, per_archive, manifest_path)
+                log("manifest: %s" % manifest_path)
+                log("counts raw=%d final=%d converted=%s"
+                    % (counts_block["raw"]["total"], counts_block["final"]["total"],
+                       json.dumps(counts_block["converted"], sort_keys=True)))
+            except Exception as exc:                               # noqa: BLE001
+                log("manifest 生成失败（不影响产物）: %s: %s" % (type(exc).__name__, exc))
+
+        if args.out:
+            dst = os.path.join(args.out, "KrkrExtract_Output")
+            os.makedirs(args.out, exist_ok=True)
+            if not tb.drop_tree(dst):
+                # shutil.move 到已存在的目录会**静默嵌入一层**（dst/KrkrExtract_Output/...），
+                # orchestrator 那边再搬一次就变成 png/png/。宁可失败并留好产物路径。
+                log("ERROR: 目标已存在且删不掉，放弃搬移以免嵌层：%s" % dst)
+                log("产物仍留在：%s" % outdir)
+                return 1
+            shutil.move(outdir, dst)
+            log("moved output to %s" % dst)
         return 0
-
-    outdir = os.path.join(stage, "KrkrExtract_Output")
-    total, by_ext, size_total = count_files(outdir)
-    log("ALL DONE: %d files %.1f MB" % (total, size_total / 1048576.0))
-    log("by_ext %s" % json.dumps(by_ext, sort_keys=True))
-    log("output at: %s" % outdir)
-
-    # ---- manifest（software-plan §2 契约，raw/final/converted 三段式）----
-    manifest_path = args.manifest
-    if manifest_path is None and args.out:
-        manifest_path = os.path.join(args.out, "manifest.json")
-    if manifest_path:
-        try:
-            man, counts_block = write_manifest(outdir, game_dir, per_archive, manifest_path)
-            log("manifest: %s" % manifest_path)
-            log("counts raw=%d final=%d converted=%s"
-                % (counts_block["raw"]["total"], counts_block["final"]["total"],
-                   json.dumps(counts_block["converted"], sort_keys=True)))
-        except Exception as exc:                               # noqa: BLE001
-            log("manifest 生成失败（不影响产物）: %s: %s" % (type(exc).__name__, exc))
-
-    if args.out:
-        dst = os.path.join(args.out, "KrkrExtract_Output")
-        os.makedirs(args.out, exist_ok=True)
-        if not tb.drop_tree(dst):
-            # shutil.move 到已存在的目录会**静默嵌入一层**（dst/KrkrExtract_Output/...），
-            # orchestrator 那边再搬一次就变成 png/png/。宁可失败并留好产物路径。
-            log("ERROR: 目标已存在且删不掉，放弃搬移以免嵌层：%s" % dst)
-            log("产物仍留在：%s" % outdir)
-            return 1
-        shutil.move(outdir, dst)
-        log("moved output to %s" % dst)
-
-    if not args.keep_stage:
-        close_all_explorers(os.path.basename(stage))
-        for p in pids_by_exe_path(stage_exe):
-            subprocess.run(["taskkill", "/F", "/PID", str(p)], capture_output=True)
-        # standalone 模式没有游戏进程，收的是 Lite.exe 本体（注入模式下它是注入器父进程）
-        for p in pids_by_exe_path(os.path.join(stage, "KrkrExtract.Lite.exe")):
-            subprocess.run(["taskkill", "/F", "/PID", str(p)], capture_output=True)
-    return 0
+    finally:
+        if not args.keep_stage:
+            close_all_explorers(os.path.basename(stage))
+            for p in pids_by_exe_path(stage_exe):
+                subprocess.run(["taskkill", "/F", "/PID", str(p)], capture_output=True)
+            # standalone 模式没有游戏进程，收的是 Lite.exe 本体（注入模式下它是注入器父进程）
+            for p in pids_by_exe_path(os.path.join(stage, "KrkrExtract.Lite.exe")):
+                subprocess.run(["taskkill", "/F", "/PID", str(p)], capture_output=True)
 
 if __name__ == "__main__":
     raise SystemExit(main())

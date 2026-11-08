@@ -111,6 +111,19 @@ class DialogUser32:
     def SetForegroundWindow(self, hwnd):
         return 1
 
+    # 2026-11-08 起主流程对 Explorer 也调 raise_ui_window（TOPMOST 连招），补齐所需方法
+    def ShowWindow(self, hwnd, cmd):
+        return 1
+
+    def SetWindowPos(self, hwnd, after, x, y, cx, cy, flags):
+        return 1
+
+    def BringWindowToTop(self, hwnd):
+        return 1
+
+    def GetForegroundWindow(self):
+        return 0
+
 
 @pytest.fixture
 def dialogs(monkeypatch):
