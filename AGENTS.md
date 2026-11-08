@@ -2183,4 +2183,10 @@ output_fullauto1/2 已删）。完整证据在 verified-findings §36，这里�
 **待办 4 里程碑**：Full Unpack 从「只对教师催眠2 有效」变成「两个真机样本」。
 下一部照旧流程即可（温泉蒸汽人妻 3 包 / aniyome 11 包 / Doinaka 9 包 / 昼下がり×2）。
 新案例的 manifest 在 `D:\GalgameOutput\堕落妻子\manifest.json`（产物出库后
+
+**同日追加： 也闭环（271.8s rc=0）**——3 包 3494 条目**走静态 garbro
+链路**（16s，对账 0 差），不需要 GUI（这游戏的包 garbro 列得出条目）。图片 1165/1165、
+音频 2168/2168 零失败，媒体 251.0 分钟，organize 3494 硬链接 0 失败。泛化清单：
+教师催眠2（GUI 链）、堕落妻子（GUI 链）、温泉蒸汽人妻（静态链）三个真机样本。
+
 `build_cases.py --from-manifests` 的扫描路径要跟着改，下次动案例库时处理）。
