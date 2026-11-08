@@ -2204,3 +2204,26 @@ manifest 同在 `D:\GalgameOutput\温泉蒸汽人妻\manifest.json`。
   游戏的）——疑似 AI 翻译补丁（exe 水印「By 朝比奈真冬 模型：gemini-3-flash-preview」）
   与注入器冲突。**当前出路 = 3 分钟人工拖**（manual.log 已给全步骤），将来想自动化
   需要专门逆向翻译补丁的钩子。
+
+## 2026-11-08 深夜 Unity 首个 Addressables 样本闭环 + AudioClip 同名去重口径修复（bugfix11）
+
+用户转向 Unity 部分（盘上 10 部全新样本）。首跑 `Sweet Succubus Home`
+（2022.3.62f2 Mono + Addressables，与已跑通的 My Wife 同版本）：
+
+- **第一轮假失败（口径自相矛盾）**：逐条枚举音频 3458 条、去重 1782 个名字，
+  收集器 1782/1782 **全收齐**——旧口径拿「逐条条目数」当期望，把「收齐了」判成
+  「缺一半」（对账 diff=-1676，rc=1）。真机金句：**对账期望必须与收集器同一份
+  地面真相（名字清单），「以逐条为准」少了去重这一步**。
+- **修复（bugfix11）**：`orchestrator.py` 音频期望 = `len(set(names))`，同名重复
+  显式打日志；期望/落盘/收集三者口径归一。逐类实证：Texture2D 709→702（差 7，
+  引用型资产，2%/20 闸门内显式解释）、Sprite 1012→1012、AudioClip 1782→1782。
+- **第二轮 rc=0**：图片 1714/1714、音频 1782/1782 零失败，媒体 216.8 分钟，
+  organize 硬链接 3496 失败 0，总耗时 1243.6s。**Unity 链路第 3 个真机样本 +
+  第 1 个 Addressables（StreamingAssets/aa）形态**。
+- 交付在 `D:\GalgameOutput\Sweet Succubus Home`（新出库布局第 2 个实战样本）。
+
+**Unity 队列（10 部，按风险分层）**：Mono 同版本（SexCP_069）→ Mono 其它版本
+（The Neighbor's Wife / Summer Clover / The Detective Servant）→ data.unity3d 形态
+（Rebirth Pub / Kaiju Princess 2）→ IL2CPP 三部（SUMMER-田舎の性活 / MiraisMidnight /
+Bunny 6000.0.58——需先备 Il2CppDumper 与 AssetStudioNext）。
+测试：新增同名去重回归 1 条，全量 `tests=846 / 0 / 0 → PASS`。

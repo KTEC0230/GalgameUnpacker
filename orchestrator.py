@@ -1639,11 +1639,17 @@ def stage_extract_unity(ctx: Ctx) -> Stage:
             st.seconds = time.time() - t0
             return st
         if names:
-            # 逐条枚举才是真地面真相：ByType 的 JSON 导出会让同名资产互相覆盖而少数
-            if len(names) != audio_exp:
+            # 逐条枚举才是真地面真相：ByType 的 JSON 导出会让同名资产互相覆盖而少数。
+            # 但逐条口径本身会把**同名重复**算进去（2026-11-08 Sweet Succubus Home 实测：
+            # 逐条 3458 条、去重后 1782 个名字；ByType 恰好也是 1782）——同名资产导出时
+            # 互相覆盖，磁盘上只可能有 1782 个文件。对账期望必须是**去重后的名字数**，
+            # 与收集器（按名字补齐）同一份地面真相，否则「收齐了」被判成「缺一半」。
+            unique_names = sorted(set(names))
+            if len(unique_names) != len(names):
                 ctx.log("extract",
-                        f"音频口径不一致：ByType JSON {audio_exp} vs 逐条枚举 {len(names)}"
-                        f"（同名覆盖），以逐条为准")
+                        f"音频逐条枚举 {len(names)} 条含同名重复，去重后 {len(unique_names)} 个名字"
+                        f"（ByType JSON {audio_exp}）；对账按去重名字数")
+            names = unique_names
             audio_exp = len(names)
             exp["by_type"]["AudioClip"] = audio_exp
             exp["total"] = sum(exp["by_type"].values())

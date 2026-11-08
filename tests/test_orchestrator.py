@@ -1847,6 +1847,50 @@ def test_unity_extract_reconciles_json_vs_convert(tmp_path, monkeypatch):
     assert "对账 0 差" in st.detail
 
 
+def test_unity_audio_expectation_dedupes_same_name_entries(tmp_path, monkeypatch):
+    """★2026-11-08 Sweet Succubus Home 真机★ 同名 AudioClip 条目导出时互相覆盖，
+    对账期望必须用**去重后的名字数**，否则「收齐了」被判成「缺一半」的假失败。
+
+    真机：逐条枚举 3458 条、去重 1782 个名字，收集器 1782/1782 全收齐，
+    旧口径拿 3458 当期望 → 对账 diff=-1676、rc=1。ByType JSON（1782）与去重逐条
+    一致，说明去重才是收集器的同一份地面真相。
+    """
+    game = tmp_path / "My Game"
+    game.mkdir()
+    data = game / "My Game_Data"
+    data.mkdir()
+    ctx = _ctx(tmp_path, game_dir=game)
+
+    calls = []
+
+    def fake_run(cmd, **kw):
+        calls.append(cmd)
+        if "--export_type" in cmd and "JSON" in cmd:
+            json_dir = Path(cmd[2])
+            json_dir.mkdir(parents=True, exist_ok=True)
+            for i in range(2):
+                (json_dir / f"asset_{i}.json").write_text("{}")
+        if "--export_type" in cmd and "Convert" in cmd:
+            conv_dir = Path(cmd[2])
+            conv_dir.mkdir(parents=True, exist_ok=True)
+            sub = conv_dir / cmd[5]
+            sub.mkdir(parents=True, exist_ok=True)
+            for i in range(2):
+                (sub / f"asset_{i}.png").write_text("x")
+        import subprocess
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr("subprocess.run", fake_run)
+    monkeypatch.setattr(orch.tb, "find_tool", lambda key: Path("/fake/assetstudio.exe"))
+    # 3 条逐条枚举、只 2 个唯一名字：旧口径 audio_exp=3 → 期望 7 ≠ 实际 6 假失败
+    _stub_audio_enum(monkeypatch, names=("clip_a", "clip_a", "clip_b"))
+
+    st = orch.stage_extract_unity(ctx)
+
+    assert st.ok is True
+    assert st.data["expected_total"] == 6, "音频期望必须按去重名字数（2）而非条目数（3）"
+
+
 def test_unity_scratch_never_writes_into_game_dir(tmp_path, monkeypatch):
     """回归（2026-11-02 Happiness Double Room，WinError 5）：临时目录**绝不能**落在游戏目录里。
 
