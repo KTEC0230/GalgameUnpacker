@@ -345,9 +345,15 @@ def collect(src: Path, dest: Path, names: list[str], exe: Path | None = None,
     exe = exe or toolbridge.find_tool("assetstudio")
     dest.mkdir(parents=True, exist_ok=True)
 
-    unique = sorted(set(names))
-    have = {p.stem for p in dest.glob("*.wav")}
-    pending = [n for n in unique if n not in have]
+    # 名字与落盘的匹配按 **casefold**（2026-11-09 Rebirth Pub 实测）：NTFS 不分
+    # 大小写，`dish2` 与 `Dish2` 物理是同一个文件——大小写敏感的 have/pending 会让
+    # 已交付的名字永远「待补」（白烧轮次）。
+    seen_names: dict[str, str] = {}
+    for n in names:
+        seen_names.setdefault(n.casefold(), n)
+    unique = sorted(seen_names.values())
+    have = {p.stem.casefold() for p in dest.glob("*.wav")}
+    pending = [n for n in unique if n.casefold() not in have]
     workers = cap_workers_by_memory(resolve_workers(workers), log=log)
     log(f"音频对账：枚举 {len(names)} 条（唯一名 {len(unique)}），已落盘 {len(have)}，"
         f"待补 {len(pending)}，并行 {workers}")
@@ -386,8 +392,8 @@ def collect(src: Path, dest: Path, names: list[str], exe: Path | None = None,
                 tasks = ((i, len(chunks), c) for i, c in enumerate(chunks))
                 with ThreadPoolExecutor(max_workers=min(workers, len(chunks))) as pool:
                     gained = sum(pool.map(lambda t: run_chunk(*t), tasks))
-            have = {p.stem for p in dest.glob("*.wav")}
-            pending = [n for n in unique if n not in have]
+            have = {p.stem.casefold() for p in dest.glob("*.wav")}
+            pending = [n for n in unique if n.casefold() not in have]
             log(f"  本轮 +{gained}，累计 {len(have)}，仍缺 {len(pending)}")
             # 逐轮减半是收敛的承重墙（§31 同日实测：难名字的收益率随批量变小急剧上升
             # 36%→60%→99%；恒定大批量则逐轮恶化）。固定 ~4s 的进程开销让小片「浪费」，
@@ -396,8 +402,8 @@ def collect(src: Path, dest: Path, names: list[str], exe: Path | None = None,
     finally:
         _drop(work)
 
-    have = {p.stem for p in dest.glob("*.wav")}
-    missing = [n for n in unique if n not in have]
+    have = {p.stem.casefold() for p in dest.glob("*.wav")}
+    missing = [n for n in unique if n.casefold() not in have]
     total = list(dest.glob("*.wav"))
     mb = sum(p.stat().st_size for p in total) / 1024 / 1024
     log(f"完成: {len(total)} 个 wav, {mb:.1f} MB -> {dest}；runs={runs}，"

@@ -2003,6 +2003,44 @@ def test_unity_extract_reconciles_json_vs_convert(tmp_path, monkeypatch):
     assert "对账 0 差" in st.detail
 
 
+def test_unity_audio_expectation_dedupes_case_variants(tmp_path, monkeypatch):
+    """★2026-11-09 Rebirth Pub 真机★ NTFS 不分大小写：`dish2` 与 `Dish2` 物理是
+    同一个文件——对账期望必须按 casefold 去重，否则正确的交付被判 diff=-1
+    （CatSystem2 HG-3 的「护栏判据必须按平台语义」同款教训）。"""
+    game = tmp_path / "My Game"
+    (game / "My Game_Data").mkdir(parents=True)
+    ctx = _ctx(tmp_path, game_dir=game)
+
+    def fake_run(cmd, **kw):
+        if "--export_type" in cmd and "JSON" in cmd:
+            json_dir = Path(cmd[2])
+            json_dir.mkdir(parents=True, exist_ok=True)
+            for i in range(2):
+                (json_dir / f"asset_{i}.json").write_text("{}")
+        if "--export_type" in cmd and "Convert" in cmd:
+            conv_dir = Path(cmd[2])
+            conv_dir.mkdir(parents=True, exist_ok=True)
+            sub = conv_dir / cmd[5]
+            sub.mkdir(parents=True, exist_ok=True)
+            for i in range(2):
+                (sub / f"asset_{i}.png").write_text("x")
+        import subprocess
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr("subprocess.run", fake_run)
+    monkeypatch.setattr(orch.tb, "find_tool", lambda key: Path("/fake/assetstudio.exe"))
+    # 逐条 4 条、casefold 唯一 2 个名字（dish2/Dish2 同文件）+ clip_a 去重后 1 个：
+    # 旧大小写敏感口径会把期望算成 3，正确口径（NTFS 语义）= 2 + 1 = 3？——
+    # 不：casefold 去重后唯一名 = {dish2, clip_a} = 2，收集器落盘 2 个 wav
+    _stub_audio_enum(monkeypatch, names=("dish2", "Dish2", "clip_a", "clip_a"))
+
+    st = orch.stage_extract_unity(ctx)
+
+    assert st.ok is True
+    audio_row = next(a for a in st.data["archives"] if a["archive"] == "AudioClip")
+    assert audio_row["expected"] == 2 and audio_row["got"] == 2
+
+
 def test_unity_audio_expectation_dedupes_same_name_entries(tmp_path, monkeypatch):
     """★2026-11-08 Sweet Succubus Home 真机★ 同名 AudioClip 条目导出时互相覆盖，
     对账期望必须用**去重后的名字数**，否则「收齐了」被判成「缺一半」的假失败。

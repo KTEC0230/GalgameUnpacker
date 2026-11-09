@@ -1705,11 +1705,20 @@ def stage_extract_unity(ctx: Ctx) -> Stage:
             # 逐条 3458 条、去重后 1782 个名字；ByType 恰好也是 1782）——同名资产导出时
             # 互相覆盖，磁盘上只可能有 1782 个文件。对账期望必须是**去重后的名字数**，
             # 与收集器（按名字补齐）同一份地面真相，否则「收齐了」被判成「缺一半」。
-            unique_names = sorted(set(names))
+            #
+            # 去重按 **casefold**（2026-11-09 Rebirth Pub 实测）：NTFS 不分大小写，
+            # `dish2` 与 `Dish2` 在磁盘上物理只能是同一个文件——大小写敏感去重会给
+            # 完全正确的交付判 diff=-1（CatSystem2 的 HG-3 同款教训：护栏判据必须
+            # 按平台语义）。保留首个出现的原名当落盘名。
+            seen_names: dict[str, str] = {}
+            for n in names:
+                seen_names.setdefault(n.casefold(), n)
+            unique_names = sorted(seen_names.values())
             if len(unique_names) != len(names):
                 ctx.log("extract",
-                        f"音频逐条枚举 {len(names)} 条含同名重复，去重后 {len(unique_names)} 个名字"
-                        f"（ByType JSON {audio_exp}）；对账按去重名字数")
+                        f"音频逐条枚举 {len(names)} 条含同名/大小写变体重复，去重后 "
+                        f"{len(unique_names)} 个名字（ByType JSON {audio_exp}）；"
+                        f"对账按 NTFS 语义去重名字数")
             names = unique_names
             audio_exp = len(names)
             exp["by_type"]["AudioClip"] = audio_exp
