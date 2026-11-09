@@ -1584,6 +1584,21 @@ def _unity_loose_videos(data_dir: Path) -> list[tuple[Path, Path]]:
     return out
 
 
+def _unity_asset_input(data_dir: Path) -> Path:
+    """AssetStudio 的实际输入：data.unity3d 形态传**文件**，经典形态传目录。
+
+    为什么：data.unity3d 游戏的 folder 模式每遍全量加载 ~30 分钟（2026-11-09
+    Kaiju Princess 2 实测：JSON 枚举 3 遍就把音频枚举的 900s 超时全击穿），
+    单文件模式 ~10 分钟——两种输入枚举出的资产头**同一份**（都在 bundle 里，
+    外置 .resource 只有数据没有头），对账口径不变。StreamingAssets 散装视频
+    与目录特征仍扫 data_dir（folder），不受此影响。
+    """
+    u3d = data_dir / "data.unity3d"
+    if u3d.is_file():
+        return u3d
+    return data_dir
+
+
 def stage_extract_unity(ctx: Ctx) -> Stage:
     """Unity AssetStudio Convert 导出：图片 + 音频。
 
@@ -1599,6 +1614,7 @@ def stage_extract_unity(ctx: Ctx) -> Stage:
     if data_dir is None:
         st.detail = "没找到 <游戏名>_Data 目录"
         return st
+    asset_input = _unity_asset_input(data_dir)
 
     as_exe = tb.find_tool("assetstudio")
     # 临时目录根必须显式给：裸默认会退到系统 temp，而**绝不能**落回游戏目录
@@ -1606,7 +1622,7 @@ def stage_extract_unity(ctx: Ctx) -> Stage:
     # 先打招呼：JSON 枚举、单次 Convert、逐条枚举这三段都是「分钟级且无中间输出」，
     # 不打招呼 GUI 上就是三连「卡死」（2026-11-04 用户实测 SUMMER，5627 条音频）。
     ctx.log("extract", "正在用 AssetStudio 枚举资产清单（JSON 口径；大样本 1-3 分钟）…")
-    exp = unity.expected_counts(data_dir, as_exe, tmp_root=ctx.work_dir / "unity")
+    exp = unity.expected_counts(asset_input, as_exe, tmp_root=ctx.work_dir / "unity")
     if exp["total"] == 0:
         # 把子进程诊断拼进失败原因：AssetStudio 起不来（DLL 缺/被拦）和「游戏真没资产」
         # 在计数上都是 0，只有 rc 与 stderr 能区分这两件事。
@@ -1636,7 +1652,7 @@ def stage_extract_unity(ctx: Ctx) -> Stage:
         ctx.log("extract", f"开始单次 Convert 导出（JSON 口径 {exp['total']} 个资产"
                            f"{' + 散装视频 %d' % len(loose) if loose else ''}；"
                            f"图片+音频第一遍；大样本要几分钟，无中间输出）…")
-        got = unity.extract_all(data_dir, ctx.raw_dir, as_exe, tmp_root=ctx.work_dir / "unity")
+        got = unity.extract_all(asset_input, ctx.raw_dir, as_exe, tmp_root=ctx.work_dir / "unity")
         archives = got.get("archives", [])
         for e in got.get("errors") or []:
             # stderr 在冻结包里不进 GUI 日志，所以把子进程诊断再抄一份到阶段日志
@@ -1657,7 +1673,7 @@ def stage_extract_unity(ctx: Ctx) -> Stage:
         if audio_exp > 0:
             ctx.log("extract", f"正在逐条枚举音频名字（ByType + 逐条两遍，JSON 说 "
                                f"{audio_exp} 条；这一步几分钟没有进度输出）…")
-        names = (_as_audio_collect2.enumerate_names(data_dir, as_exe,
+        names = (_as_audio_collect2.enumerate_names(asset_input, as_exe,
                                                     ctx.work_dir / "unity")
                  if audio_exp > 0 else [])
         if names is None:
@@ -1691,7 +1707,7 @@ def stage_extract_unity(ctx: Ctx) -> Stage:
             exp["total"] = sum(exp["by_type"].values())
             expected_total = exp["total"] + len(loose)
             ctx.log("extract", f"音频单次导出 {audio_got}/{audio_exp}，按名字补齐...")
-            res = _as_audio_collect2.collect(data_dir, audio_dir, names, as_exe,
+            res = _as_audio_collect2.collect(asset_input, audio_dir, names, as_exe,
                                              work_root=ctx.work_dir,
                                              log=lambda m: ctx.log("extract", m))
             audio_got = len(list(audio_dir.glob("*.wav")))
