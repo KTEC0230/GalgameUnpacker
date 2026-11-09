@@ -1549,8 +1549,18 @@ def stage_extract_cs2(ctx: Ctx) -> Stage:
 #: （Happiness Double Room 实测 460/455）。但常态不等于可以无限放过：
 #: 比例超 2% 或绝对数超 20 就必须红灯（AssetStudio 换版本、纹理被裁、路径写错都会先表现在这里）。
 #: 两个条件是**或**：小样本游戏（几十张图）靠比例拦，大样本靠绝对数拦。
+#: 绝对数**随类型规模自适应**（2026-11-09 MiraisMidnight 实测：3513 张图的引用型
+#: 缺口 28 个=0.8%，是 My Wife 5 缺口的同一家族，固定 20 会把正常大游戏拦死）——
+#: 取 max(20, 类型数的 1%)，比例闸门 2% 不变（真正的系统性漏交付比例上藏不住）。
 UNITY_TEXTURE2D_GAP_RATIO = 0.02
-UNITY_TEXTURE2D_GAP_ABS = 20
+UNITY_TEXTURE2D_GAP_ABS_FLOOR = 20
+UNITY_TEXTURE2D_GAP_ABS_SCALE = 0.01
+
+
+def _texture2d_gap_abs(type_count: int) -> int:
+    """Texture2D 缺口的绝对阈值：max(20, 类型数×1%)。"""
+    return max(UNITY_TEXTURE2D_GAP_ABS_FLOOR,
+               int(type_count * UNITY_TEXTURE2D_GAP_ABS_SCALE))
 
 
 def _unity_data_dir(game_dir: Path) -> Path | None:
@@ -1776,8 +1786,9 @@ def stage_extract_unity(ctx: Ctx) -> Stage:
     texture2d_actual = got_by_type.get("Texture2D", 0)
     texture2d_gap = texture2d_exp - texture2d_actual
     texture2d_ratio = (texture2d_gap / texture2d_exp) if texture2d_exp else 0.0
+    gap_abs = _texture2d_gap_abs(texture2d_exp)
     gap_over = texture2d_gap > 0 and (texture2d_ratio > UNITY_TEXTURE2D_GAP_RATIO
-                                      or texture2d_gap > UNITY_TEXTURE2D_GAP_ABS)
+                                      or texture2d_gap > gap_abs)
 
     # 非 Texture2D 的类不允许有任何差：否则「图片少 5 张」会被记成 Texture2D 缺口混过去。
     type_mism = [f"{t}：枚举 {exp['by_type'].get(t, 0)} vs 落盘 {got_by_type.get(t, 0)}"
@@ -1799,7 +1810,7 @@ def stage_extract_unity(ctx: Ctx) -> Stage:
         st.ok = False
         st.detail = (f"对账失败：AssetStudio 只导出了 {texture2d_actual}/{texture2d_exp} 个 "
                      f"Texture2D（缺口 {texture2d_gap} 个，占 {texture2d_ratio:.1%}，超过阈值 "
-                     f"{UNITY_TEXTURE2D_GAP_RATIO:.0%}/{UNITY_TEXTURE2D_GAP_ABS} 个）")
+                     f"{UNITY_TEXTURE2D_GAP_RATIO:.0%}/{gap_abs} 个）")
     elif type_mism:
         st.ok = False
         st.detail = ("对账失败：缺口只允许出现在 Texture2D，但 " + "；".join(type_mism[:3]))
