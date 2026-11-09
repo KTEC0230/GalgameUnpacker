@@ -22,7 +22,19 @@
 
 > **2026-11-02 测试反馈**：随包 GARbro 的 .NET 插件加载修复仅适用于可信工具目录；Unity 样本的音频收集未对账通过，KiriKiri 索引兜底已用真实注入新索引和模拟窗口缺失提取 2562 条，自然窗口缺失尚未复现。案例索引已保留旧案例并加入 Toshiue。实测和限制见 `verified-findings.md`。
 
-> **📌 当前状态增量（2026-11-09 深夜，Unity 队列开跑中 —— 会话被打断时在此接力）**
+> **📌 当前状态增量（2026-11-09 深夜 → 11-10，Unity 队列 + Agent 能力 P0/P1）**
+> - **新功能 P1 已交付（提交 `3782eb6`，用户 2026-11-10 点头）**：
+>   `experiences.py` 检索器 + **rules/experiences/ 首批 12 条**（error_code/报错串/
+>   魔数/目录特征打分，只报告不决策）+ `sandbox/actions.py` 11 动作**执行体**
+>   （参数 schema + Sandbox 路径围栏 + toolbridge 薄封装；csc 白名单硬拒 Agent 源码）+
+>   `sandbox/validator.py` 硬验证器（ok/partial/failed，反例测试齐全）+
+>   `agent_cli.py` 四命令（diagnose/plan/run/validate，stdout 纯 JSON，
+>   orchestrator `--agent-*` 旗标转发）。**tests=889 / 0 / 0**，golden 零漂移。
+>   **P1 验收（aniyome 真实失败端到端）**：diagnose → plan（krkr-encrypted-xp3
+>   10 分命中）→ run（hex 魔数 5850330d…、garbro 假阴性留痕）→ validate(ok)。
+>   **P2 待做**：候选规则提交流程 + 用户侧任务书模板生成 + 使用文档。
+>   用法：`python orchestrator.py --agent-diagnose <游戏目录|失败manifest>` 起，
+>   四命令参数见 agent_cli.py 头注。
 > - **新功能 P0 已交付（提交 `761f867`，用户 `新功能.md` 的 Agent 攻坚能力）**：
 >   `errorcodes.py`（17 错误码唯一出处 + 源码扫描护栏）、`sandbox/actions.py`（11 动作
 >   注册表=契约，执行体 P1）、`diagnostics.py`（自包含诊断包，失败自动落
