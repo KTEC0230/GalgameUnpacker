@@ -31,11 +31,33 @@
 >   失败出包（11 输入含 XP3 魔数、gui_error 原文、案例三命中、env/契约齐全），包在
 >   `D:\GalgameOutput\aniyome\_work\diagnostic\diagnostic.json`。**P1（experiences 库 +
 >   动作执行体 + validator + 四命令）等用户看过诊断包点头再开**。
-> - **Unity 队列实战**：SexCP_069 ✅ rc=0（880.5s，图片 2522/音频 1386 零失败）、
->   The Neighbor's Wife ✅ rc=0（182s，图片 671/音频 255 零失败）、
->   **The Detective Servant ✅ rc=0（554s，图片 1827/音频 3190 零失败，媒体 431.6 分钟）**——
->   Unity 链路第 4/5/6 个真机样本。前两部还没补 `--organize` 归档视图（要
->   `--reuse-raw "…\raw" --organize` 复跑，**注意 `--reuse-raw` 必须带 raw 路径参数**）。
+> - **Unity 队列实战**：SexCP_069 ✅ rc=0（880.5s→补跑 151.8s，图片 2522/音频 1386/**视频 2** 零失败——
+>   散装视频口径修复实战上线）、The Neighbor's Wife ✅ rc=0（182s→42.6s，图片 671/音频 255）、
+>   **The Detective Servant ✅ rc=0（554s，图片 1827/音频 3190，媒体 431.6 分钟）**、
+>   **Summer Clover ✅ rc=0（图片 2808/音频 2027 全收齐，媒体 345.5 分钟）**、
+>   **Kaiju Princess 2 ✅ rc=0（图片 5131/音频 8583 零失败，媒体 860.5 分钟，data.unity3d 形态）**、
+>   **Rebirth Pub ✅ rc=0（图片 6587/音频 1690 零失败，媒体 124.2 分钟，Unity 6000 混合形态）**——
+>   Unity 链路第 4~9 个真机样本，全部带 `分类/` 归档视图。
+>   **Summer Clover 音频抢救完胜**：494 条「系统性卡死」音频经
+>   「bundle 单文件输入 + 批≤8」配方 **2027/2027 仍缺 0 全部收回**（§41/AGENTS 11-09 节）。
+> - **bugfix12（`476fe13`+`5c9f9ea`+`5427747`）**：① data.unity3d 形态 AssetStudio 输入
+>   改**单文件**（folder 每遍 ~30 分钟→单文件 ~10 分钟；**红线：aa 有 bundle 时必须
+>   folder**——Rebirth Pub 的 data.unity3d 仅 219MB、aa 有 11GB，单文件会静默漏整棵 aa）；
+>   ② 音频对账/收集器按 **NTFS 语义 casefold** 去重（dish2/Dish2 物理同文件，
+>   大小写敏感口径给正确交付判 diff=-1——CatSystem2「护栏判据必须按平台语义」同款）。
+>   tests=863 / 0 / 0，golden 零漂移。
+> - **IL2CPP 三部实锤（2026-11-10）**：媒体产出线**不需要 Il2CppDumper**——
+>   MiraisMidnight（2022.3.10f1）用 AssetStudioNext 直接枚举出 11511 资产跑链中；
+>   SUMMER-田舎の性活 2020.3.19f1、Bunny（6000 系，globalgamemanagers 版本串不在
+>   头 64 字节）同形态排队。Il2CppDumper 只在要 MonoBehaviour/自定义类型时才需要。
+> - **data.unity3d 形态的离线策略（Kaiju Princess 2 实测，2026-11-09 深夜）**：
+>   folder 模式每遍全量加载 ~30 分钟 → 链路超时全灭（音频枚举 900s 被击穿，诚实判失败，
+>   诊断包自动落盘——P0 首次实战）。改走**离线管线**：① 音频头单文件枚举（591s，
+>   Razviar dump 是平铺字段：m_Source/m_Offset/m_Size 在顶层）；② 音频数据 8565/8585
+>   在 resources.resource（抽样 400/400 偏移全中 FSB5 魔数）→ **mmap 切片 + vgmstream
+>   r2168 转 wav：8290 条仅 96 秒全成**（唯一名 8583 = ByType 口径，对账闭合）；
+>   ③ 图片待探测（单文件 Convert，若贴图像素在 bundle 内则同样绕开 folder 慢加载）。
+>   **Rebirth Pub（Unity 6000 + data.unity3d）走同一策略。**
 > - **⚠️ 工作树有未提交改动（就是修复产物，别清掉）**：`orchestrator.py` 新增
 >   `_unity_loose_videos()` + stage 集成（StreamingAssets 散装视频收集，SexCP_069 的
 >   2 个裸 mp4 暴露的口径缺口）+ `tests/test_orchestrator.py` 3 条新测试 +
@@ -58,10 +80,11 @@
 >   `D:\K\galgame\unity\vgmstream\`（r2168，FSB5 转换备用，本轮没用上）。
 >   下载路由：**api.github.com 直连可用**；release 资产直连慢（~9KB/s）要 `-C -` 续传 +
 >   1800s 超时；本机代理口 7897/18788 都不通。
-> - **源码状态**：**`f0cc7d4` 已本地提交**（散装视频修复 + §40/§41 文档，显式 add 四文件；
->   根上另有用户自己的未跟踪文件 `新功能.md`——不是本轮产物，别动别加）；
->   **push 未完成**（2026-11-09 深夜 SSH 到 github 不通，网络恢复后 `git push GalgameUnpacker master`）；
->   基线 tests=849。
+> - **源码状态**：`f0cc7d4` + `94075ca` + `761f867` 已本地提交（显式 add）；
+>   **GitHub 不再推送：用户账号 2026-11-09 起封禁中**——本地提交即唯一记录，
+>   远程同步等账号恢复后再说（别反复试 push）；
+>   根上另有用户自己的未跟踪文件 `新功能.md`——不是本轮产物，别动别加；
+>   基线 tests=860。
 >
 
 > **📌 当前状态（2026-11-08 深夜收口）**
