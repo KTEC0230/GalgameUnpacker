@@ -1,0 +1,27 @@
+{
+  "id": "assetstudio-batch-cap",
+  "symptoms": {
+    "error_code": ["extract-failed"],
+    "tool_error_strings": ["assets skipped (not extractable", "assets skipped"],
+    "magic_hex_prefix": [],
+    "dir_features": ["streaming-assets", "unity-data-dir"]
+  },
+  "hypothesis": "AssetStudioNext 的 AudioClip Convert 有 ≈8 个/次的导出上限，超过静默 skip（退出码仍 0）——批 20/100 都复现，批 8 全出，单名必成。把待补名字切成 ≤8/片逐批导。",
+  "actions": ["assetstudio_export"],
+  "constraints": {
+    "max_runs": 40,
+    "batch_size": 8,
+    "requires": "缺名清单（逐条枚举 BySource 的 JSON）"
+  },
+  "validation": {
+    "kind": "count_exact",
+    "expect": "缺名清单逐个落盘且 ffprobe 可开"
+  },
+  "negative_examples": [
+    "经典 resources.assets 形态（Happiness Double Room 家族）大批量一直正常时不适用",
+    "名字清单拿不到时先解决枚举（本条不覆盖枚举失败）"
+  ],
+  "confidence": 0.9,
+  "source": "verified-findings.md §41（Summer Clover 真机）",
+  "applies_to": {"engine": "Unity"}
+}

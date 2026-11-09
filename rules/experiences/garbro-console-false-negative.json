@@ -1,0 +1,26 @@
+{
+  "id": "garbro-console-false-negative",
+  "symptoms": {
+    "error_code": ["extract-failed"],
+    "tool_error_strings": ["unknown format"],
+    "magic_hex_prefix": [],
+    "dir_features": ["xp3-archives"]
+  },
+  "hypothesis": "GARbro.Console 报 unknown format 可能是假阴性（GUI 能解的游戏 Console 报不出，坑 1），也可能是整包加密——先用 GUI 复核再下结论，别拿 Console 的「读不出」当加密铁证。",
+  "actions": ["garbro_list", "garbro_extract", "hex_inspect"],
+  "constraints": {
+    "max_runs": 6,
+    "requires": "归档文件在沙箱可见范围内"
+  },
+  "validation": {
+    "kind": "count_at_least",
+    "expect": "GUI 复核能列出条目 → 走提取；列不出且魔数非明文索引 → 转 krkr-encrypted-xp3"
+  },
+  "negative_examples": [
+    "Console 列得出条目时不适用（直接提取即可）",
+    "引擎不是 KiriKiri 系（xp3）时不适用"
+  ],
+  "confidence": 0.7,
+  "source": "AGENTS.md 坑 1 + verified-findings §1",
+  "applies_to": {"engine": "KiriKiri"}
+}

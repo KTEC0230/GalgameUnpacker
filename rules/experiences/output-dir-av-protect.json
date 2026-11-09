@@ -1,0 +1,26 @@
+{
+  "id": "output-dir-av-protect",
+  "symptoms": {
+    "error_code": ["output-not-writable", "no-writable-location"],
+    "tool_error_strings": ["Error 5", "拒绝访问", "不可写"],
+    "magic_hex_prefix": [],
+    "dir_features": []
+  },
+  "hypothesis": "本机安全软件（火绒/深信服 EDR）按「进程信誉 + 目录」拦敏感写入，不是 ACL 或磁盘问题。特征：程序自身目录可写、用户数据目录全不可写。出路：换程序目录 output 落点（GUI 自动做）/ 把解压目录加入白名单 / 用源码态 python 直跑绕开未签名 exe。",
+  "actions": ["copy_to_sandbox"],
+  "constraints": {
+    "max_runs": 2,
+    "requires": "先跑 --doctor 拿环境自检报告，别瞎猜拦截源"
+  },
+  "validation": {
+    "kind": "count_at_least",
+    "expect": "doctor 的写探针在选定目录报「可写」"
+  },
+  "negative_examples": [
+    "全部位置都不可写 → 拦截在进程级，换机器/虚拟机，不是本条能解的",
+    "EnableLUA=0 的机器上「以管理员运行」是空操作，别建议提权"
+  ],
+  "confidence": 0.6,
+  "source": "antivirus-false-positives.md §5 + AGENTS 环境节",
+  "applies_to": {}
+}

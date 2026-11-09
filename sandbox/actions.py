@@ -24,6 +24,8 @@ Agent 提供的源码一律拒绝——不给自己造一个「编译执行任�
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 #: 全局约束（进契约文件；validator 与 run_action 共同执行）。
 CONSTRAINTS = {
     "sandbox_only": "所有动作只读源目录；写盘只允许发生在沙箱目录内",
@@ -38,7 +40,7 @@ CONSTRAINTS = {
 REGISTRY: dict[str, dict] = {
     "garbro_list": {
         "description": "用 GARbro.Console 列归档条目数（判定「能不能读」的第一探针）",
-        "status": "planned",
+        "status": "ready",
         "toolbridge": "garbro_list",
         "params": {
             "type": "object",
@@ -52,7 +54,7 @@ REGISTRY: dict[str, dict] = {
     },
     "garbro_extract": {
         "description": "用 GARbro.Console 解归档到沙箱目录",
-        "status": "planned",
+        "status": "ready",
         "toolbridge": "run",
         "params": {
             "type": "object",
@@ -67,7 +69,7 @@ REGISTRY: dict[str, dict] = {
     },
     "assetstudio_export": {
         "description": "AssetStudio.CLI Convert 导出（Texture2D/Sprite/AudioClip 单类型）",
-        "status": "planned",
+        "status": "ready",
         "toolbridge": "assetstudio_export",
         "params": {
             "type": "object",
@@ -83,7 +85,7 @@ REGISTRY: dict[str, dict] = {
     },
     "assetstudio_json": {
         "description": "AssetStudio.CLI JSON 枚举（地面真相口径）",
-        "status": "planned",
+        "status": "ready",
         "toolbridge": "assetstudio_export",
         "params": {
             "type": "object",
@@ -100,7 +102,7 @@ REGISTRY: dict[str, dict] = {
     },
     "tlg2png": {
         "description": "tlg2png 批量转 PNG",
-        "status": "planned",
+        "status": "ready",
         "toolbridge": "tlg2png",
         "params": {
             "type": "object",
@@ -115,7 +117,7 @@ REGISTRY: dict[str, dict] = {
     },
     "png_carve": {
         "description": "PNA/PNAP 多帧容器逐帧 carve（_pna_carve.carve）",
-        "status": "planned",
+        "status": "ready",
         "toolbridge": "_pna_carve",
         "params": {
             "type": "object",
@@ -130,7 +132,7 @@ REGISTRY: dict[str, dict] = {
     },
     "csc_build": {
         "description": "编译仓库自带的 C# 工具（白名单：_gyu_tool.cs / _hg3_tool.cs）",
-        "status": "planned",
+        "status": "ready",
         "toolbridge": "ensure_csharp",
         "params": {
             "type": "object",
@@ -144,7 +146,7 @@ REGISTRY: dict[str, dict] = {
     },
     "ffprobe_check": {
         "description": "ffprobe 探单个媒体（含失败原因串）",
-        "status": "planned",
+        "status": "ready",
         "toolbridge": "ffprobe_ex",
         "params": {
             "type": "object",
@@ -158,7 +160,7 @@ REGISTRY: dict[str, dict] = {
     },
     "pillow_verify": {
         "description": "Pillow verify() 探单张图片",
-        "status": "planned",
+        "status": "ready",
         "toolbridge": None,
         "params": {
             "type": "object",
@@ -172,7 +174,7 @@ REGISTRY: dict[str, dict] = {
     },
     "hex_inspect": {
         "description": "读文件头部十六进制（魔数判别，只读）",
-        "status": "planned",
+        "status": "ready",
         "toolbridge": None,
         "params": {
             "type": "object",
@@ -187,7 +189,7 @@ REGISTRY: dict[str, dict] = {
     },
     "copy_to_sandbox": {
         "description": "把源文件/目录拷进沙箱（唯一写盘动作；copy 不 move，源只读）",
-        "status": "planned",
+        "status": "ready",
         "toolbridge": None,
         "params": {
             "type": "object",
@@ -232,6 +234,213 @@ def generate_contract() -> dict:
             "rule": "候选规则带诊断包哈希与操作者，绝不自动进 rules/experiences/",
         },
     }
+
+
+# =====================================================================
+# 执行层（P1）：每个动作 = 参数校验 + 路径围栏 + toolbridge 薄封装
+# =====================================================================
+
+class SandboxViolation(RuntimeError):
+    """白名单/围栏违规——Agent 想做的事越界了。**硬失败**，不给部分执行。"""
+
+
+class Sandbox:
+    """源目录（只读）+ 沙箱目录（唯一可写区）的路径围栏。
+
+    `resolve_in_sandbox(rel)`：把 Agent 给的相对路径解析到沙箱根内，
+    解析结果逃出沙箱根（..、绝对路径、盘符）一律抛 SandboxViolation。
+    `check_source(path)`：只读源必须在源目录或沙箱内。
+    """
+
+    def __init__(self, source_dir: Path | str, sandbox_root: Path | str):
+        self.source_dir = Path(source_dir).resolve()
+        self.sandbox_root = Path(sandbox_root).resolve()
+        self.sandbox_root.mkdir(parents=True, exist_ok=True)
+
+    def _inside(self, p: Path, root: Path) -> bool:
+        try:
+            p.relative_to(root)
+            return True
+        except ValueError:
+            return False
+
+    def resolve_in_sandbox(self, rel: str) -> Path:
+        p = Path(rel)
+        if p.is_absolute():
+            cand = p.resolve()
+            if self._inside(cand, self.sandbox_root):
+                return cand
+            raise SandboxViolation(f"绝对路径必须在沙箱内：{p}")
+        cand = (self.sandbox_root / p).resolve()
+        if not self._inside(cand, self.sandbox_root):
+            raise SandboxViolation(f"路径逃出沙箱：{p} → {cand}")
+        return cand
+
+    def check_source(self, p: Path) -> Path:
+        # 相对路径相对**源目录**解析（Agent 以游戏根为工作目录），不是相对 CWD
+        rp = (p if p.is_absolute() else (self.source_dir / p)).resolve()
+        if self._inside(rp, self.source_dir) or self._inside(rp, self.sandbox_root):
+            return rp
+        raise SandboxViolation(f"源路径必须在源目录或沙箱内：{p}")
+
+    def rel_to_source(self, p: Path) -> str:
+        try:
+            return str(p.resolve().relative_to(self.source_dir))
+        except ValueError:
+            return str(p)
+
+
+def _validate_params(name: str, params: dict) -> dict:
+    """按 REGISTRY 的 JSON-Schema 子集校验（required/type/enum）。"""
+    spec = REGISTRY.get(name)
+    if spec is None:
+        raise SandboxViolation(f"白名单外动作：{name}")
+    schema = spec.get("params") or {}
+    missing = [k for k in schema.get("required", []) if k not in params]
+    if missing:
+        raise SandboxViolation(f"{name} 缺参数：{','.join(missing)}")
+    for key, rule in (schema.get("properties") or {}).items():
+        if key not in params:
+            continue
+        val = params[key]
+        t = rule.get("type")
+        if t == "string" and not isinstance(val, str):
+            raise SandboxViolation(f"{name}.{key} 必须是字符串")
+        if t == "integer" and not isinstance(val, int):
+            raise SandboxViolation(f"{name}.{key} 必须是整数")
+        if "enum" in rule and val not in rule["enum"]:
+            raise SandboxViolation(f"{name}.{key} 必须是 {rule['enum']} 之一")
+    return params
+
+
+def _count(root: Path) -> int:
+    return sum(1 for p in root.rglob("*") if p.is_file())
+
+
+def run_action(name: str, params: dict, sandbox: Sandbox) -> dict:
+    """执行一个白名单动作。返回 {ok, products?, detail, diagnostics?}。
+
+    成败按产物数（count_products 口径），rc 只进 diagnostics——全库同一口径。
+    任何 toolbridge 异常收敛成 ok=False + 原因，不让 Agent 拿到裸 traceback。
+    """
+    params = _validate_params(name, params)
+    import toolbridge as tb
+
+    def out(ok: bool, detail: str, **kw) -> dict:
+        r = {"action": name, "ok": ok, "detail": detail}
+        r.update(kw)
+        return r
+
+    try:
+        if name == "garbro_list":
+            src = sandbox.check_source(Path(params["archive"]))
+            listable, count, err = tb.garbro_list(str(src))
+            return out(bool(listable), f"列得出={listable} 条目={count}" + (f"；{err[:120]}" if err else ""),
+                       products=count)
+
+        if name == "garbro_extract":
+            src = sandbox.check_source(Path(params["archive"]))
+            dest = sandbox.resolve_in_sandbox(params["dest"])
+            before = _count(dest) if dest.exists() else 0
+            r = tb.run(["garbro"], ["-x", str(src)], cwd=str(dest),
+                       product_dir=str(dest))
+            after = _count(dest) if dest.exists() else 0
+            return out(after > before, f"产物 {after - before} 个（rc={r.returncode}，只作诊断）",
+                       products=after - before)
+
+        if name in ("assetstudio_export", "assetstudio_json"):
+            src = sandbox.check_source(Path(params["input"]))
+            dest = sandbox.resolve_in_sandbox(params["dest"])
+            export_type = "JSON" if name == "assetstudio_json" else "Convert"
+            group = params.get("group_assets") or "ByType"
+            argv = [str(src), str(dest), "--game", "Normal",
+                    "--types", params["type_name"],
+                    "--export_type", export_type, "--group_assets", group]
+            r = tb.run(["assetstudio"], argv, cwd=str(dest), product_dir=str(dest))
+            exts = (".json",) if export_type == "JSON" else None
+            n = tb.count_products(str(dest), exts=exts).total if dest.exists() else 0
+            return out(n > 0, f"{export_type} 产物 {n} 个（rc={r.returncode}，只作诊断）",
+                       products=n)
+
+        if name == "tlg2png":
+            src = sandbox.check_source(Path(params["src"]))
+            dest = sandbox.resolve_in_sandbox(params["dst"])
+            dest.mkdir(parents=True, exist_ok=True)
+            n = 0
+            for t in sorted(src.rglob("*.tlg")):
+                r = tb.run(["tlg2png"], [str(t), str(dest / (t.stem + ".png"))],
+                           cwd=str(dest), product_dir=str(dest))
+                n += _count(dest)
+            return out(n > 0, f"PNG 产物 {n} 个", products=n)
+
+        if name == "png_carve":
+            sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+            import _pna_carve
+            src = sandbox.check_source(Path(params["src"]))
+            dest = sandbox.resolve_in_sandbox(params["dst"])
+            dest.mkdir(parents=True, exist_ok=True)
+            n = 0
+            for p in sorted(src.rglob("*")):
+                if p.is_file() and p.suffix.lower() in (".pna", ".mos"):
+                    n += _pna_carve.carve(p, dest)
+            return out(n > 0, f"carve 帧 {n} 个", products=n)
+
+        if name == "csc_build":
+            key = params["key"]
+            allow = CONSTRAINTS.get("csc_sources_allowlist") or []
+            if key not in allow:
+                raise SandboxViolation(f"csc_build 只允许编译仓库自带源码：{allow}（Agent 源码一律拒绝）")
+            exe = tb.ensure_csharp(key)
+            return out(exe.is_file(), f"工具就绪：{exe}", products=1)
+
+        if name == "ffprobe_check":
+            src = sandbox.check_source(Path(params["path"]))
+            info, reason = tb.ffprobe_ex(str(src))
+            if info:
+                return out(True, f"{info.get('kind')}:{info.get('codec')} "
+                                 f"{(info.get('dur') or 0):.1f}s", products=1)
+            return out(False, f"ffprobe 失败：{reason}", products=0)
+
+        if name == "pillow_verify":
+            src = sandbox.check_source(Path(params["path"]))
+            from PIL import Image
+            with Image.open(src) as im:
+                im.verify()
+            return out(True, "Pillow verify 通过", products=1)
+
+        if name == "hex_inspect":
+            src = sandbox.check_source(Path(params["path"]))
+            length = int(params.get("length") or 64)
+            with src.open("rb") as fh:
+                head = fh.read(max(4, min(length, 4096)))
+            hexs = head.hex()
+            asc = "".join(chr(b) if 32 <= b < 127 else "." for b in head)
+            return out(True, f"{src.name} 前 {len(head)} 字节", hex=hexs, ascii=asc, products=1)
+
+        if name == "copy_to_sandbox":
+            src = sandbox.check_source(Path(params["src"]))
+            dest = sandbox.resolve_in_sandbox(params["dest"])
+            if src.is_dir():
+                dest.mkdir(parents=True, exist_ok=True)
+                import shutil
+                n = 0
+                for f in src.rglob("*"):
+                    if f.is_file():
+                        t = dest / f.relative_to(src)
+                        t.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(f, t)
+                        n += 1
+                return out(n > 0, f"复制 {n} 个文件", products=n)
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            import shutil
+            shutil.copy2(src, dest)
+            return out(dest.exists(), f"复制 {src.name}", products=1)
+
+        raise SandboxViolation(f"白名单外动作：{name}")
+    except SandboxViolation:
+        raise
+    except Exception as exc:                                   # noqa: BLE001
+        return out(False, f"{type(exc).__name__}: {exc}")
 
 
 def _self_check() -> int:

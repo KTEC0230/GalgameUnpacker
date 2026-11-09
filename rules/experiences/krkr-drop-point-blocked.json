@@ -1,0 +1,25 @@
+{
+  "id": "krkr-drop-point-blocked",
+  "symptoms": {
+    "error_code": ["extract-failed"],
+    "tool_error_strings": ["落点", "采样", "DirectUIHWND", "盖住"],
+    "magic_hex_prefix": [],
+    "dir_features": ["xp3-archives"]
+  },
+  "hypothesis": "拖拽落点被其它窗口盖住（Explorer 抬到最前后正好压住 KrkrExtract 落点区，§38.2）。起点与终点必须同屏：关掉多余窗口或把 Explorer 固定摆到屏幕左上角再试。",
+  "actions": ["hex_inspect"],
+  "constraints": {
+    "max_runs": 2,
+    "requires": "真实桌面会话；本条是环境问题，沙箱动作解不了，验证靠重跑链路"
+  },
+  "validation": {
+    "kind": "count_at_least",
+    "expect": "重跑 GUI 链路不再报落点诊断"
+  },
+  "negative_examples": [
+    "报错是「致命错误框」压住源点 → 看 krkr-fatal-dialog-blocks-drop"
+  ],
+  "confidence": 0.6,
+  "source": "verified-findings.md §38.2",
+  "applies_to": {"engine": "KiriKiri"}
+}

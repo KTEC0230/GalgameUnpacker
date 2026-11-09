@@ -1,0 +1,26 @@
+{
+  "id": "unity-data-unity3d-offline-audio",
+  "symptoms": {
+    "error_code": ["extract-failed"],
+    "tool_error_strings": ["音频名字枚举超时", "待补", "不收敛"],
+    "magic_hex_prefix": [],
+    "dir_features": ["data-unity3d"]
+  },
+  "hypothesis": "data.unity3d 形态 folder 模式每遍全量加载 ~30 分钟，链路超时全灭。音频本体常在外置 resources.resource：单文件枚举 data.unity3d 拿全部 AudioClip 头（Razviar dump 平铺字段 m_Source/m_Offset/m_Size）→ 按 offset/size mmap 切片（FSB5 魔数自证）→ vgmstream 转 wav。比链路逐批导快两个数量级（Kaiju Princess 2：8290 条 96 秒）。",
+  "actions": ["hex_inspect", "copy_to_sandbox", "ffprobe_check"],
+  "constraints": {
+    "max_runs": 8,
+    "requires": "数据在盘上平文件（m_Source 指向 *.resource）；vgmstream 在位（D:\\K\\galgame\\unity\\vgmstream）"
+  },
+  "validation": {
+    "kind": "count_exact",
+    "expect": "唯一名数 == 落盘 wav 数，抽样 ffprobe 时长与 m_Length 一致"
+  },
+  "negative_examples": [
+    "m_Source 指向 archive:/CAB-…（数据在 bundle 内）→ 直接 AssetStudio 导出即可，不用切片",
+    "贴图不适用本条（像素解码需 AssetStudio，不要手写 DXT 解码）"
+  ],
+  "confidence": 0.8,
+  "source": "AGENTS.md 2026-11-09 节（Kaiju Princess 2 离线管线）",
+  "applies_to": {"engine": "Unity"}
+}

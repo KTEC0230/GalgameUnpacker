@@ -72,6 +72,8 @@ def _dir_features(game_dir: Path) -> list[str]:
         features.append("installer-layout")
     if any(n.endswith(".xp3") for n in names):
         features.append("xp3-archives")
+    if any(n.endswith(".bundle_unpacked") for n in names):
+        features.append("bundle-unpacked-dirs")   # repack 抽流形态（§41）
     if any(n == "krkrextract.exe" for n in names):
         features.append("krkr-tool-present")
     data_dirs = [p for p in entries if p.is_dir() and p.name.endswith("_Data")]

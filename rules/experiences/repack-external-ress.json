@@ -1,0 +1,27 @@
+{
+  "id": "repack-external-ress",
+  "symptoms": {
+    "error_code": ["extract-failed"],
+    "tool_error_strings": ["not extractable", "assets skipped"],
+    "magic_hex_prefix": [],
+    "dir_features": ["bundle-unpacked-dirs", "unity-data-dir"]
+  },
+  "hypothesis": "repack 把某些 CAB 的 .resS 抽成了外部文件（<hash>.bundle_unpacked/ 目录），folder 模式解析不到 archive: 内部流 → 一批资产「系统性卡死」（两个 AssetStudio fork 同结果）。①查原始 bundle 是否还在：在就把 bundle **单文件**喂 AssetStudio（绕过 folder 的外部流解析失败）；②AudioClip Convert 有 ≈8 个/次上限，批 ≤8。素材线索：缺失资产的 m_Source 指向同一个 CAB。",
+  "actions": ["assetstudio_export", "assetstudio_json", "hex_inspect"],
+  "constraints": {
+    "max_runs": 60,
+    "batch_size": 8,
+    "requires": "原始 bundle 文件还在；缺名清单先拿到（BySource JSON 枚举）"
+  },
+  "validation": {
+    "kind": "count_exact",
+    "expect": "缺名清单逐个落盘且 ffprobe 可开（Summer Clover 实测 2027/2027 全收回）"
+  },
+  "negative_examples": [
+    "原始 bundle 已被删（只剩 .bundle_unpacked 目录）→ 本条不适用，需要离线切片（见 unity-data-unity3d-offline-audio）",
+    "缺失资产 m_Source 不指向同一 CAB 时，先按 CAB 分组再逐组处理"
+  ],
+  "confidence": 0.9,
+  "source": "verified-findings.md §41 + AGENTS 2026-11-09 节（Summer Clover 抢救）",
+  "applies_to": {"engine": "Unity"}
+}

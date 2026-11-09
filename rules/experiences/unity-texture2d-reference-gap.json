@@ -1,0 +1,26 @@
+{
+  "id": "unity-texture2d-reference-gap",
+  "symptoms": {
+    "error_code": ["extract-failed"],
+    "tool_error_strings": ["Texture2D 引用型资产 Convert 不导出"],
+    "magic_hex_prefix": [],
+    "dir_features": ["unity-data-dir"]
+  },
+  "hypothesis": "AssetStudio 的 JSON 枚举会列出引用型 Texture2D，但 Convert 不导出它们——这是**已知固有行为**，缺口在阈值内（比例 ≤2% 且 ≤max(20, 1%·类型数)）就显式解释放行，不修也不追。缺口超阈值才是真问题。",
+  "actions": ["assetstudio_json"],
+  "constraints": {
+    "max_runs": 2,
+    "requires": "缺口必须只出现在 Texture2D 这一类"
+  },
+  "validation": {
+    "kind": "count_at_least",
+    "expect": "缺口数额与阶段报出的 explained_shortfall 恰好相等"
+  },
+  "negative_examples": [
+    "缺口出现在 Sprite/AudioClip → 不是本条，逐类严格相等是红线",
+    "缺口比例 >2% → 系统性漏交付，查 repack-external-ress / 版本兼容"
+  ],
+  "confidence": 0.8,
+  "source": "verified-findings.md §39 + A3 红线",
+  "applies_to": {"engine": "Unity"}
+}

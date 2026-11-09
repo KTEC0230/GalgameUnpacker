@@ -1,0 +1,25 @@
+{
+  "id": "krkr-exe-rename-check",
+  "symptoms": {
+    "error_code": ["extract-failed"],
+    "tool_error_strings": ["发生了致命的错误", "stage", "game_exe"],
+    "magic_hex_prefix": [],
+    "dir_features": ["xp3-archives", "installer-layout"]
+  },
+  "hypothesis": "有的补丁 exe 校验自己的文件名——stage 主程序改名 game.exe 后游戏秒弹「发生了致命的错误」（bugfix10，aniyome 实锤）。stage 必须保留原名（身份记 game_exe.txt），链路已修；遇到旧包重演时检查 stage 目录的 exe 名。",
+  "actions": ["hex_inspect"],
+  "constraints": {
+    "max_runs": 2,
+    "requires": "对照实验：原名裸跑正常、改名即死才算实锤"
+  },
+  "validation": {
+    "kind": "count_at_least",
+    "expect": "stage 主程序保留原名后游戏正常启动"
+  },
+  "negative_examples": [
+    "游戏裸跑也弹致命错误 → 不是改名问题，看加密/缺 DLL"
+  ],
+  "confidence": 0.7,
+  "source": "AGENTS.md bugfix10 + verified-findings §37 区",
+  "applies_to": {"engine": "KiriKiri"}
+}

@@ -3038,6 +3038,15 @@ def main(argv: list[str] | None = None) -> int:
     # ——桌面工具的第一眼体验不该是「argparse 报缺参数」闪退（2026-11-02 用户实测踩到）。
     if "--gui" in argv or "--gui-smoke" in argv or not argv:
         return _launch_gui(argv)
+    # Agent 攻坚四命令（新功能 P1）：在 argparse 之前分流——它们有自己的参数
+    # 形状（game_dir/--out 不适用），与 --doctor/--gui 同款待遇。
+    _AGENT_FLAGS = ("--agent-diagnose", "--agent-plan", "--agent-run", "--agent-validate")
+    for _af in _AGENT_FLAGS:
+        if _af in argv:
+            idx = argv.index(_af)
+            rest = argv[:idx] + argv[idx + 1:]
+            import agent_cli
+            return agent_cli.main([_af[len("--agent-"):], *rest])
     ap = argparse.ArgumentParser(
         description="galgame 解包编排器：detect → extract → postprocess → verify → manifest")
     ap.add_argument("game_dir")

@@ -1,0 +1,26 @@
+{
+  "id": "krkr-encrypted-xp3",
+  "symptoms": {
+    "error_code": ["extract-failed"],
+    "tool_error_strings": ["GARbro 列不出条目", "unknown format", "compressed or unsupported XP3"],
+    "magic_hex_prefix": ["5850330d0a"],
+    "dir_features": ["xp3-archives"]
+  },
+  "hypothesis": "xp3 整包加密（GARbro 全列不出）。出路优先级：krkr_auto_extract 全自动（--allow-gui，真实桌面）→ 人工 3 分钟拖拽 KrkrExtract → 静态 index 兜底（仅限引擎 dump 出明文 .index 的场景）。",
+  "actions": ["hex_inspect", "copy_to_sandbox", "garbro_list"],
+  "constraints": {
+    "max_runs": 4,
+    "requires": "游戏路径纯 ASCII（krkr stage 硬性要求）；GUI 链路必须独占真实桌面"
+  },
+  "validation": {
+    "kind": "count_at_least",
+    "expect": "拖拽/注入后 KrkrExtract_Output 出现且条目数与 xp3 索引一致"
+  },
+  "negative_examples": [
+    "个别包列得出、个别列不出 → 先解列得出的，混合情形不是整包加密",
+    "AI 翻译补丁游戏（exe 水印）注入器可能冲突（aniyome 案例），直接走人工拖"
+  ],
+  "confidence": 0.8,
+  "source": "verified-findings.md §17 + AGENTS 接手收口",
+  "applies_to": {"engine": "KiriKiri"}
+}

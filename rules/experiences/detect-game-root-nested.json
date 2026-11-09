@@ -1,0 +1,25 @@
+{
+  "id": "detect-game-root-nested",
+  "symptoms": {
+    "error_code": ["detect-failed", "dry-run-detect-failed"],
+    "tool_error_strings": [],
+    "magic_hex_prefix": [],
+    "dir_features": []
+  },
+  "hypothesis": "游戏根选错了一层（嵌套布局）：真实游戏根是含 <名>_Data + exe 的那层目录（Summer Clover 实测：外层判定 30 分未达阈值，内层 135 分）。向下找带 *_Data 或 *.exe 的子目录，用它重跑。",
+  "actions": ["hex_inspect"],
+  "constraints": {
+    "max_runs": 3,
+    "requires": "只读侦察，不复制大目录"
+  },
+  "validation": {
+    "kind": "count_at_least",
+    "expect": "内层目录 dispatch 判定达阈值（≥60 分）"
+  },
+  "negative_examples": [
+    "目录已含 *_Data 还判不出 → 是规则缺口不是嵌套问题，报开发者补指纹"
+  ],
+  "confidence": 0.7,
+  "source": "AGENTS.md 2026-11-09 节（Summer Clover 侦察）",
+  "applies_to": {}
+}

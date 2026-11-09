@@ -1,0 +1,26 @@
+{
+  "id": "assetstudio-zero-products",
+  "symptoms": {
+    "error_code": ["extract-failed", "verify-no-products"],
+    "tool_error_strings": ["枚举到 0 个资产", "JSON 枚举到 0 个资产"],
+    "magic_hex_prefix": [],
+    "dir_features": ["unity-data-dir"]
+  },
+  "hypothesis": "AssetStudio rc=0 而 0 产物有两种完全不同的根因：工具起不来（DLL 缺/被安全软件拦，rc≠0 时 stderr 是唯一证据）或版本不认这个 Unity 版本（6000 系改用 AssetStudioNext，Razviar fork）。",
+  "actions": ["assetstudio_json", "assetstudio_export"],
+  "constraints": {
+    "max_runs": 6,
+    "requires": "先看子进程 rc 与 stderr 再换工具，别盲试"
+  },
+  "validation": {
+    "kind": "count_at_least",
+    "expect": "换工具/修环境后 JSON 枚举数 > 0"
+  },
+  "negative_examples": [
+    "游戏真没有该类资产时（其它类型枚举正常）不适用",
+    "Unity 版本 ≤2022 且原版 CLI 一直正常时不适用"
+  ],
+  "confidence": 0.8,
+  "source": "AGENTS.md 坑 4 + _unity_extract._run_as 注释",
+  "applies_to": {"engine": "Unity"}
+}

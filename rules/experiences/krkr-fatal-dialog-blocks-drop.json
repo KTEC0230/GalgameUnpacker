@@ -1,0 +1,25 @@
+{
+  "id": "krkr-fatal-dialog-blocks-drop",
+  "symptoms": {
+    "error_code": ["extract-failed"],
+    "tool_error_strings": ["致命", "致命框", "#32770", "NO_AUTO_DISMISS"],
+    "magic_hex_prefix": [],
+    "dir_features": ["xp3-archives"]
+  },
+  "hypothesis": "游戏启动弹的致命错误框（#32770，NO_AUTO_DISMISS 刻意留着）压住了 Explorer 条目，拖拽源头死（§38.1）。先消框（确认它为什么弹——常见是缺 DLL/解码器或安装器形态），再重跑拖拽链。",
+  "actions": ["hex_inspect"],
+  "constraints": {
+    "max_runs": 2,
+    "requires": "读 _work/extract.log 的窗口枚举段确认 #32770 在场"
+  },
+  "validation": {
+    "kind": "count_at_least",
+    "expect": "致命框消失后拖拽链源头能取到条目矩形"
+  },
+  "negative_examples": [
+    "报错是「落点全被盖」→ 看 krkr-drop-point-blocked（终点侧问题）"
+  ],
+  "confidence": 0.6,
+  "source": "verified-findings.md §35 + §38.1",
+  "applies_to": {"engine": "KiriKiri"}
+}
