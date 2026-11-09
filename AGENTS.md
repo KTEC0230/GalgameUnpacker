@@ -47,9 +47,14 @@
 >   大小写敏感口径给正确交付判 diff=-1——CatSystem2「护栏判据必须按平台语义」同款）。
 >   tests=863 / 0 / 0，golden 零漂移。
 > - **IL2CPP 三部实锤（2026-11-10）**：媒体产出线**不需要 Il2CppDumper**——
->   MiraisMidnight（2022.3.10f1）用 AssetStudioNext 直接枚举出 11511 资产跑链中；
->   SUMMER-田舎の性活 2020.3.19f1、Bunny（6000 系，globalgamemanagers 版本串不在
->   头 64 字节）同形态排队。Il2CppDumper 只在要 MonoBehaviour/自定义类型时才需要。
+>   MiraisMidnight（2022.3.10f1）用 AssetStudioNext 直接枚举 11511 资产、
+>   **闭环 rc=0（reuse 366.9s：图片 6589/音频 4894 零失败，媒体 523.8 分钟）**；
+>   SUMMER-田舎の性活 2020.3.19f1 跑链中（音频 3344 条收敛慢，第 4 轮 2012 待补，
+>   轮次走完按诚实缺口落地，尾部可用 §41 bundle 配方补）；Bunny（6000 系）
+>   排队。Il2CppDumper 只在要 MonoBehaviour/自定义类型时才需要。
+>   **bugfix13（`dcf57fa`）**：Texture2D 缺口绝对阈值随类型规模自适应
+>   `max(20, 类型数×1%)`（MiraisMidnight 3513 张图缺口 28=0.8% 是引用型家族
+>   正常规模，固定 20 拦死正常大游戏；比例闸门 2% 不变）。tests=863 / 0 / 0。
 > - **data.unity3d 形态的离线策略（Kaiju Princess 2 实测，2026-11-09 深夜）**：
 >   folder 模式每遍全量加载 ~30 分钟 → 链路超时全灭（音频枚举 900s 被击穿，诚实判失败，
 >   诊断包自动落盘——P0 首次实战）。改走**离线管线**：① 音频头单文件枚举（591s，
