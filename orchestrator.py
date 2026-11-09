@@ -1585,17 +1585,26 @@ def _unity_loose_videos(data_dir: Path) -> list[tuple[Path, Path]]:
 
 
 def _unity_asset_input(data_dir: Path) -> Path:
-    """AssetStudio 的实际输入：data.unity3d 形态传**文件**，经典形态传目录。
+    """AssetStudio 的实际输入：纯 data.unity3d 形态传**文件**，其余传目录。
 
     为什么：data.unity3d 游戏的 folder 模式每遍全量加载 ~30 分钟（2026-11-09
     Kaiju Princess 2 实测：JSON 枚举 3 遍就把音频枚举的 900s 超时全击穿），
     单文件模式 ~10 分钟——两种输入枚举出的资产头**同一份**（都在 bundle 里，
     外置 .resource 只有数据没有头），对账口径不变。StreamingAssets 散装视频
     与目录特征仍扫 data_dir（folder），不受此影响。
+
+    **红线（混合形态不许静默漏）**：`StreamingAssets/aa` 里有 .bundle 时内容
+    在 Addressables 里（Rebirth Pub 实测：data.unity3d 仅 219MB、aa 有 11GB），
+    单文件输入会静默漏掉整棵 aa——那种形态必须 folder。data.unity3d + 无 aa
+    （Kaiju 形态）才走单文件；注意此形态的音频数据在外置 .resource，
+    **全新跑的音频收集会诚实失败**（离线切片管线见 AGENTS 11-09 节），已交付
+    的 raw 复用不受影响。
     """
     u3d = data_dir / "data.unity3d"
     if u3d.is_file():
-        return u3d
+        aa = data_dir / "StreamingAssets" / "aa"
+        if not (aa.is_dir() and any(aa.rglob("*.bundle"))):
+            return u3d
     return data_dir
 
 

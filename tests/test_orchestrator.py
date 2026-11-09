@@ -1870,6 +1870,48 @@ def test_unity_uses_data_unity3d_file_as_asset_input(tmp_path, monkeypatch):
     assert (ctx.raw_dir / "Video" / "interlude.mp4").exists(), "散装视频仍要从 folder 收"
 
 
+def test_unity_hybrid_aa_form_keeps_folder_input(tmp_path, monkeypatch):
+    """★红线★ data.unity3d + StreamingAssets/aa 混合形态（Rebirth Pub）必须用 folder：
+    单文件会静默漏掉整棵 aa（11GB 的 bundles）——最坏的一类「无声少交付」。"""
+    game = tmp_path / "My Game"
+    data = game / "My Game_Data"
+    aa = data / "StreamingAssets" / "aa"
+    aa.mkdir(parents=True)
+    (data / "data.unity3d").write_bytes(b"UnityFS\x00fake")
+    (aa / "some.bundle").write_bytes(b"UnityFS\x00fake")
+    ctx = _ctx(tmp_path, game_dir=game)
+
+    seen_inputs = []
+
+    def fake_run(cmd, **kw):
+        seen_inputs.append(Path(cmd[1]))
+        if "--export_type" in cmd and "JSON" in cmd:
+            json_dir = Path(cmd[2])
+            json_dir.mkdir(parents=True, exist_ok=True)
+            for i in range(2):
+                (json_dir / f"asset_{i}.json").write_text("{}")
+        if "--export_type" in cmd and "Convert" in cmd:
+            conv_dir = Path(cmd[2])
+            conv_dir.mkdir(parents=True, exist_ok=True)
+            sub = conv_dir / cmd[5]
+            sub.mkdir(parents=True, exist_ok=True)
+            for i in range(2):
+                (sub / f"asset_{i}.png").write_text("x")
+        import subprocess
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr("subprocess.run", fake_run)
+    monkeypatch.setattr(orch.tb, "find_tool", lambda key: Path("/fake/assetstudio.exe"))
+    _stub_audio_enum(monkeypatch, names=("clip_a", "clip_b"))
+
+    st = orch.stage_extract_unity(ctx)
+
+    assert st.ok is True
+    assert seen_inputs
+    for p in seen_inputs:
+        assert p.name.endswith("_Data"), f"混合形态必须用 folder 输入: {p}"
+
+
 def test_unity_stage_collects_loose_videos(tmp_path, monkeypatch):
     """★2026-11-08 SexCP_069★ 散装视频必须进 raw/Video/ 且计入期望与对账——
     旧链路只认资产（Texture2D/Sprite/AudioClip），裸 mp4 被静默漏交付，
