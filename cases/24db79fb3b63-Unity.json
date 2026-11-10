@@ -1,0 +1,93 @@
+{
+  "schema": "cases/1",
+  "case_id": "24db79fb3b63",
+  "engine": "Unity",
+  "engine_label": "Unity",
+  "sample": "Kaiju Princess 2",
+  "game_dir": "D:\\HY\\Kaiju Princess 2",
+  "discriminator": "data-unity3d-offline-audio",
+  "fingerprint": {
+    "signals": [
+      "unity_data",
+      "unity_managed"
+    ],
+    "score": 70,
+    "threshold": 60,
+    "signature": "2651104a6b65",
+    "engine": "Unity",
+    "reconstructed": false
+  },
+  "decision": {},
+  "timing": {
+    "detect": 0.08,
+    "extract": 1760.5,
+    "postprocess": 0.91,
+    "verify": 97.29,
+    "manifest": null,
+    "total": 1871.3
+  },
+  "result": {
+    "ok": true,
+    "source": "manifest",
+    "summary": {
+      "images": 5131,
+      "audio": 8583,
+      "video": null,
+      "total": 13714
+    },
+    "media_minutes": 860.5,
+    "counts": {
+      "raw": {
+        "by_ext": {
+          ".png": 5131,
+          ".wav": 8583
+        },
+        "total": 13714,
+        "bytes": 9765017192
+      },
+      "final": {
+        "by_ext": {
+          ".png": 5131,
+          ".wav": 8583
+        },
+        "total": 13714,
+        "bytes": 9765017192
+      },
+      "converted": {}
+    },
+    "verify": {
+      "verified": true,
+      "image_ok": 5131,
+      "image_fail": 0,
+      "audio_ok": 8583,
+      "audio_fail": 0,
+      "video_ok": 0,
+      "video_fail": 0,
+      "zero_byte": 0,
+      "fail_total": 0,
+      "media_minutes": 860.5,
+      "nonmedia": 0,
+      "nonmedia_by_ext": {},
+      "status": "ok"
+    },
+    "reconcile": {
+      "expected": 13715,
+      "actual": 13714,
+      "diff": -1,
+      "method": "archive-index",
+      "explained_by": {
+        "amount": 1,
+        "reason": "Texture2D 引用型资产 Convert 不导出（2694/2695，缺口在阈值内）"
+      }
+    }
+  },
+  "failures": [],
+  "provenance": {
+    "source": "manifest",
+    "manifest_path": "D:\\GalgameOutput\\Kaiju Princess 2\\manifest.json",
+    "doc_refs": [
+      "AGENTS.md 样本表"
+    ],
+    "generated_at": "2026-11-10T23:44:08+08:00"
+  }
+}

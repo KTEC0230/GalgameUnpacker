@@ -1,0 +1,94 @@
+{
+  "schema": "cases/1",
+  "case_id": "c1bc89ddb451",
+  "engine": "Unity",
+  "engine_label": "Unity",
+  "sample": "The Detective Servant",
+  "game_dir": "D:\\HY\\The Detective Servant",
+  "discriminator": null,
+  "fingerprint": {
+    "signals": [
+      "unity_data",
+      "unity_globalgamemanagers",
+      "unity_managed"
+    ],
+    "score": 80,
+    "threshold": 60,
+    "signature": "6807e46dcb04",
+    "engine": "Unity",
+    "reconstructed": false
+  },
+  "decision": {},
+  "timing": {
+    "detect": 2.41,
+    "extract": 480.41,
+    "postprocess": 1.92,
+    "verify": 62.29,
+    "manifest": null,
+    "total": 554.0
+  },
+  "result": {
+    "ok": true,
+    "source": "manifest",
+    "summary": {
+      "images": 1827,
+      "audio": 3190,
+      "video": null,
+      "total": 5017
+    },
+    "media_minutes": 431.6,
+    "counts": {
+      "raw": {
+        "by_ext": {
+          ".png": 1827,
+          ".wav": 3190
+        },
+        "total": 5017,
+        "bytes": 4164552753
+      },
+      "final": {
+        "by_ext": {
+          ".png": 1827,
+          ".wav": 3190
+        },
+        "total": 5017,
+        "bytes": 4164552753
+      },
+      "converted": {}
+    },
+    "verify": {
+      "verified": true,
+      "image_ok": 1827,
+      "image_fail": 0,
+      "audio_ok": 3190,
+      "audio_fail": 0,
+      "video_ok": 0,
+      "video_fail": 0,
+      "zero_byte": 0,
+      "fail_total": 0,
+      "media_minutes": 431.6,
+      "nonmedia": 0,
+      "nonmedia_by_ext": {},
+      "status": "ok"
+    },
+    "reconcile": {
+      "expected": 5018,
+      "actual": 5017,
+      "diff": -1,
+      "method": "archive-index",
+      "explained_by": {
+        "amount": 1,
+        "reason": "Texture2D 引用型资产 Convert 不导出（1004/1005，缺口在阈值内）"
+      }
+    }
+  },
+  "failures": [],
+  "provenance": {
+    "source": "manifest",
+    "manifest_path": "D:\\GalgameOutput\\The Detective Servant\\manifest.json",
+    "doc_refs": [
+      "AGENTS.md 样本表"
+    ],
+    "generated_at": "2026-11-10T23:44:08+08:00"
+  }
+}

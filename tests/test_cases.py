@@ -162,7 +162,8 @@ def _load_built_cases() -> list[dict]:
 
 def test_built_cases_exist():
     cases = _load_built_cases()
-    assert len(cases) == 13
+    # 13（2026-11-01 建库）+ 9（2026-11-10 Unity 队列入库）= 22
+    assert len(cases) == 22
 
 
 def test_write_all_preserves_unrelated_and_rejects_collision(tmp_path, monkeypatch):

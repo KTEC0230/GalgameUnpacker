@@ -96,6 +96,41 @@ SAMPLES: dict[str, dict] = {
                       "manifest": None, "discriminator": "xp3-encrypted"},
     "教师催眠1": {"game_dir": r"D:\HY\教师催眠1", "manifest": None,
                   "discriminator": "xp3-encrypted-krkrZ"},
+    # ---- 2026-11-09/10 Unity 队列（产物新家 D:\GalgameOutput；manifest 用绝对路径，
+    # pathlib 对绝对路径自动取右侧，ROOT / spec 不用改）----
+    "SexCP_069": {"game_dir": r"D:\HY\SexCP_069",
+                  "manifest": r"D:\GalgameOutput\SexCP_069\manifest.json",
+                  "discriminator": "addressables-loose-videos"},
+    "The Neighbor's Wife": {
+        "game_dir": r"D:\HY\The Neighbor's Wife",
+        "manifest": r"D:\GalgameOutput\The Neighbor's Wife\manifest.json",
+        "discriminator": None},
+    "The Detective Servant": {
+        "game_dir": r"D:\HY\The Detective Servant",
+        "manifest": r"D:\GalgameOutput\The Detective Servant\manifest.json",
+        "discriminator": None},
+    "Summer Clover": {
+        "game_dir": r"D:\HY\Summer Clover\SummerClover",
+        "manifest": r"D:\GalgameOutput\Summer Clover\manifest.json",
+        "discriminator": "nested-root-repack-ress"},
+    "Kaiju Princess 2": {
+        "game_dir": r"D:\HY\Kaiju Princess 2",
+        "manifest": r"D:\GalgameOutput\Kaiju Princess 2\manifest.json",
+        "discriminator": "data-unity3d-offline-audio"},
+    "Rebirth Pub": {"game_dir": r"D:\HY\Rebirth Pub",
+                    "manifest": r"D:\GalgameOutput\Rebirth Pub\manifest.json",
+                    "discriminator": "unity6000-hybrid-aa"},
+    "MiraisMidnight": {"game_dir": r"D:\HY\MiraisMidnight",
+                       "manifest": r"D:\GalgameOutput\MiraisMidnight\manifest.json",
+                       "discriminator": "il2cpp-media-no-dumper"},
+    "SUMMER-田舎の性活": {
+        "game_dir": r"D:\HY\SUMMER-田舎の性活",
+        "manifest": r"D:\GalgameOutput\SUMMER-田舎の性活\manifest.json",
+        "discriminator": "il2cpp-classic-aa"},
+    "Bunny's Rent-a-Mom Agency": {
+        "game_dir": r"D:\HY\Bunny's Rent-a-Mom Agency",
+        "manifest": r"D:\GalgameOutput\Bunny's Rent-a-Mom Agency\manifest.json",
+        "discriminator": "unity-shell-link6-hybrid"},
 }
 
 # 已排除的 manifest 目录（同款试跑，非独立样本）

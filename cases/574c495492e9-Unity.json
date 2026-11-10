@@ -1,0 +1,98 @@
+{
+  "schema": "cases/1",
+  "case_id": "574c495492e9",
+  "engine": "Unity",
+  "engine_label": "Unity",
+  "sample": "MiraisMidnight",
+  "game_dir": "D:\\HY\\MiraisMidnight",
+  "discriminator": "il2cpp-media-no-dumper",
+  "fingerprint": {
+    "signals": [
+      "unity_addressables",
+      "unity_bundle",
+      "unity_bundle_magic",
+      "unity_data",
+      "unity_gameassembly",
+      "unity_globalgamemanagers",
+      "unity_il2cpp"
+    ],
+    "score": 155,
+    "threshold": 60,
+    "signature": "e9701c8cb7a4",
+    "engine": "Unity",
+    "reconstructed": false
+  },
+  "decision": {},
+  "timing": {
+    "detect": 0.64,
+    "extract": 284.43,
+    "postprocess": 0.73,
+    "verify": 70.1,
+    "manifest": null,
+    "total": 366.9
+  },
+  "result": {
+    "ok": true,
+    "source": "manifest",
+    "summary": {
+      "images": 6589,
+      "audio": 4894,
+      "video": null,
+      "total": 11483
+    },
+    "media_minutes": 523.8,
+    "counts": {
+      "raw": {
+        "by_ext": {
+          ".png": 6589,
+          ".wav": 4894
+        },
+        "total": 11483,
+        "bytes": 7015428810
+      },
+      "final": {
+        "by_ext": {
+          ".png": 6589,
+          ".wav": 4894
+        },
+        "total": 11483,
+        "bytes": 7015428810
+      },
+      "converted": {}
+    },
+    "verify": {
+      "verified": true,
+      "image_ok": 6589,
+      "image_fail": 0,
+      "audio_ok": 4894,
+      "audio_fail": 0,
+      "video_ok": 0,
+      "video_fail": 0,
+      "zero_byte": 0,
+      "fail_total": 0,
+      "media_minutes": 523.8,
+      "nonmedia": 0,
+      "nonmedia_by_ext": {},
+      "status": "ok"
+    },
+    "reconcile": {
+      "expected": 11511,
+      "actual": 11483,
+      "diff": -28,
+      "method": "archive-index",
+      "explained_by": {
+        "amount": 28,
+        "reason": "Texture2D 引用型资产 Convert 不导出（3485/3513，缺口在阈值内）"
+      }
+    }
+  },
+  "failures": [],
+  "provenance": {
+    "source": "manifest",
+    "manifest_path": "D:\\GalgameOutput\\MiraisMidnight\\manifest.json",
+    "doc_refs": [
+      "AGENTS.md 样本表"
+    ],
+    "generated_at": "2026-11-10T23:44:08+08:00"
+  }
+}

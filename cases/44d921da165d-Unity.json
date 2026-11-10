@@ -1,0 +1,96 @@
+{
+  "schema": "cases/1",
+  "case_id": "44d921da165d",
+  "engine": "Unity",
+  "engine_label": "Unity",
+  "sample": "Bunny's Rent-a-Mom Agency",
+  "game_dir": "D:\\HY\\Bunny's Rent-a-Mom Agency",
+  "discriminator": "unity-shell-link6-hybrid",
+  "fingerprint": {
+    "signals": [
+      "unity_addressables",
+      "unity_bundle",
+      "unity_bundle_magic",
+      "unity_data",
+      "unity_gameassembly",
+      "unity_globalgamemanagers",
+      "unity_il2cpp"
+    ],
+    "score": 155,
+    "threshold": 60,
+    "signature": "e9701c8cb7a4",
+    "engine": "Unity",
+    "reconstructed": false
+  },
+  "decision": {},
+  "timing": {
+    "detect": 0.05,
+    "extract": 8.17,
+    "postprocess": 0.01,
+    "verify": 0.45,
+    "manifest": null,
+    "total": 8.8
+  },
+  "result": {
+    "ok": true,
+    "source": "manifest",
+    "summary": {
+      "images": 90,
+      "audio": null,
+      "video": null,
+      "total": 90
+    },
+    "media_minutes": 0.0,
+    "counts": {
+      "raw": {
+        "by_ext": {
+          ".png": 90
+        },
+        "total": 90,
+        "bytes": 542025
+      },
+      "final": {
+        "by_ext": {
+          ".png": 90
+        },
+        "total": 90,
+        "bytes": 542025
+      },
+      "converted": {}
+    },
+    "verify": {
+      "verified": true,
+      "image_ok": 90,
+      "image_fail": 0,
+      "audio_ok": 0,
+      "audio_fail": 0,
+      "video_ok": 0,
+      "video_fail": 0,
+      "zero_byte": 0,
+      "fail_total": 0,
+      "media_minutes": 0.0,
+      "nonmedia": 0,
+      "nonmedia_by_ext": {},
+      "status": "ok"
+    },
+    "reconcile": {
+      "expected": 91,
+      "actual": 90,
+      "diff": -1,
+      "method": "archive-index",
+      "explained_by": {
+        "amount": 1,
+        "reason": "Texture2D 引用型资产 Convert 不导出（75/76，缺口在阈值内）"
+      }
+    }
+  },
+  "failures": [],
+  "provenance": {
+    "source": "manifest",
+    "manifest_path": "D:\\GalgameOutput\\Bunny's Rent-a-Mom Agency\\manifest.json",
+    "doc_refs": [
+      "AGENTS.md 样本表"
+    ],
+    "generated_at": "2026-11-10T23:44:08+08:00"
+  }
+}

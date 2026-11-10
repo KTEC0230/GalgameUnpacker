@@ -1,0 +1,96 @@
+{
+  "schema": "cases/1",
+  "case_id": "a1a354366a74",
+  "engine": "Unity",
+  "engine_label": "Unity",
+  "sample": "Rebirth Pub",
+  "game_dir": "D:\\HY\\Rebirth Pub",
+  "discriminator": "unity6000-hybrid-aa",
+  "fingerprint": {
+    "signals": [
+      "unity_addressables",
+      "unity_bundle",
+      "unity_bundle_magic",
+      "unity_data",
+      "unity_managed"
+    ],
+    "score": 125,
+    "threshold": 60,
+    "signature": "6e041c46508d",
+    "engine": "Unity",
+    "reconstructed": false
+  },
+  "decision": {},
+  "timing": {
+    "detect": 0.36,
+    "extract": 144.74,
+    "postprocess": 0.53,
+    "verify": 21.87,
+    "manifest": null,
+    "total": 175.1
+  },
+  "result": {
+    "ok": true,
+    "source": "manifest",
+    "summary": {
+      "images": 6587,
+      "audio": 1690,
+      "video": null,
+      "total": 8277
+    },
+    "media_minutes": 124.2,
+    "counts": {
+      "raw": {
+        "by_ext": {
+          ".png": 6587,
+          ".wav": 1690
+        },
+        "total": 8277,
+        "bytes": 4392205441
+      },
+      "final": {
+        "by_ext": {
+          ".png": 6587,
+          ".wav": 1690
+        },
+        "total": 8277,
+        "bytes": 4392205441
+      },
+      "converted": {}
+    },
+    "verify": {
+      "verified": true,
+      "image_ok": 6587,
+      "image_fail": 0,
+      "audio_ok": 1690,
+      "audio_fail": 0,
+      "video_ok": 0,
+      "video_fail": 0,
+      "zero_byte": 0,
+      "fail_total": 0,
+      "media_minutes": 124.2,
+      "nonmedia": 0,
+      "nonmedia_by_ext": {},
+      "status": "ok"
+    },
+    "reconcile": {
+      "expected": 8279,
+      "actual": 8277,
+      "diff": -2,
+      "method": "archive-index",
+      "explained_by": {
+        "amount": 2,
+        "reason": "Texture2D 引用型资产 Convert 不导出（3829/3831，缺口在阈值内）"
+      }
+    }
+  },
+  "failures": [],
+  "provenance": {
+    "source": "manifest",
+    "manifest_path": "D:\\GalgameOutput\\Rebirth Pub\\manifest.json",
+    "doc_refs": [
+      "AGENTS.md 样本表"
+    ],
+    "generated_at": "2026-11-10T23:44:08+08:00"
+  }
+}

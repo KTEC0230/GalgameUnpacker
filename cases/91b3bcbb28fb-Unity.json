@@ -1,0 +1,97 @@
+{
+  "schema": "cases/1",
+  "case_id": "91b3bcbb28fb",
+  "engine": "Unity",
+  "engine_label": "Unity",
+  "sample": "Summer Clover",
+  "game_dir": "D:\\HY\\Summer Clover\\SummerClover",
+  "discriminator": "nested-root-repack-ress",
+  "fingerprint": {
+    "signals": [
+      "unity_addressables",
+      "unity_bundle",
+      "unity_bundle_magic",
+      "unity_data",
+      "unity_globalgamemanagers",
+      "unity_managed"
+    ],
+    "score": 135,
+    "threshold": 60,
+    "signature": "d7865c6b7ae0",
+    "engine": "Unity",
+    "reconstructed": false
+  },
+  "decision": {},
+  "timing": {
+    "detect": 1.95,
+    "extract": 742.33,
+    "postprocess": 0.3,
+    "verify": 26.55,
+    "manifest": null,
+    "total": 775.5
+  },
+  "result": {
+    "ok": true,
+    "source": "manifest",
+    "summary": {
+      "images": 2808,
+      "audio": 2027,
+      "video": null,
+      "total": 4835
+    },
+    "media_minutes": 345.5,
+    "counts": {
+      "raw": {
+        "by_ext": {
+          ".png": 2808,
+          ".wav": 2027
+        },
+        "total": 4835,
+        "bytes": 6067864295
+      },
+      "final": {
+        "by_ext": {
+          ".png": 2808,
+          ".wav": 2027
+        },
+        "total": 4835,
+        "bytes": 6067864295
+      },
+      "converted": {}
+    },
+    "verify": {
+      "verified": true,
+      "image_ok": 2808,
+      "image_fail": 0,
+      "audio_ok": 2027,
+      "audio_fail": 0,
+      "video_ok": 0,
+      "video_fail": 0,
+      "zero_byte": 0,
+      "fail_total": 0,
+      "media_minutes": 345.5,
+      "nonmedia": 0,
+      "nonmedia_by_ext": {},
+      "status": "ok"
+    },
+    "reconcile": {
+      "expected": 4836,
+      "actual": 4835,
+      "diff": -1,
+      "method": "archive-index",
+      "explained_by": {
+        "amount": 1,
+        "reason": "Texture2D 引用型资产 Convert 不导出（1441/1442，缺口在阈值内）"
+      }
+    }
+  },
+  "failures": [],
+  "provenance": {
+    "source": "manifest",
+    "manifest_path": "D:\\GalgameOutput\\Summer Clover\\manifest.json",
+    "doc_refs": [
+      "AGENTS.md 样本表"
+    ],
+    "generated_at": "2026-11-10T23:44:08+08:00"
+  }
+}

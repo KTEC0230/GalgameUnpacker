@@ -1,6 +1,6 @@
 {
   "schema": "cases-index/1",
-  "generated_at": "2026-11-02T21:40:55+08:00",
+  "generated_at": "2026-11-10T23:44:08+08:00",
   "by_signature": {
     "e0bde5633a1e": [
       {
@@ -9,6 +9,16 @@
         "engine_label": "AdvHD",
         "sample": "ラブラブお痴験バイト性活",
         "discriminator": null,
+        "provenance": "manifest"
+      }
+    ],
+    "2651104a6b65": [
+      {
+        "case_id": "24db79fb3b63",
+        "engine": "Unity",
+        "engine_label": "Unity",
+        "sample": "Kaiju Princess 2",
+        "discriminator": "data-unity3d-offline-audio",
         "provenance": "manifest"
       }
     ],
@@ -58,6 +68,32 @@
         "provenance": "docs-reconstructed"
       }
     ],
+    "e9701c8cb7a4": [
+      {
+        "case_id": "44d921da165d",
+        "engine": "Unity",
+        "engine_label": "Unity",
+        "sample": "Bunny's Rent-a-Mom Agency",
+        "discriminator": "unity-shell-link6-hybrid",
+        "provenance": "manifest"
+      },
+      {
+        "case_id": "574c495492e9",
+        "engine": "Unity",
+        "engine_label": "Unity",
+        "sample": "MiraisMidnight",
+        "discriminator": "il2cpp-media-no-dumper",
+        "provenance": "manifest"
+      },
+      {
+        "case_id": "c71b92f1e886",
+        "engine": "Unity",
+        "engine_label": "Unity",
+        "sample": "SUMMER-田舎の性活",
+        "discriminator": "il2cpp-classic-aa",
+        "provenance": "manifest"
+      }
+    ],
     "989a414d3ce6": [
       {
         "case_id": "4728ebd0c0b5",
@@ -78,6 +114,32 @@
         "provenance": "docs-reconstructed"
       }
     ],
+    "d7865c6b7ae0": [
+      {
+        "case_id": "584b0629a1ad",
+        "engine": "Unity",
+        "engine_label": "Unity",
+        "sample": "SexCP_069",
+        "discriminator": "addressables-loose-videos",
+        "provenance": "manifest"
+      },
+      {
+        "case_id": "91b3bcbb28fb",
+        "engine": "Unity",
+        "engine_label": "Unity",
+        "sample": "Summer Clover",
+        "discriminator": "nested-root-repack-ress",
+        "provenance": "manifest"
+      },
+      {
+        "case_id": "b7203cd338c9",
+        "engine": "Unity",
+        "engine_label": "Unity",
+        "sample": "The Neighbor's Wife",
+        "discriminator": null,
+        "provenance": "manifest"
+      }
+    ],
     "7c6e1abb20ae": [
       {
         "case_id": "9101a028fe2e",
@@ -86,6 +148,16 @@
         "sample": "あまねぇ",
         "discriminator": null,
         "provenance": "docs-reconstructed"
+      }
+    ],
+    "6e041c46508d": [
+      {
+        "case_id": "a1a354366a74",
+        "engine": "Unity",
+        "engine_label": "Unity",
+        "sample": "Rebirth Pub",
+        "discriminator": "unity6000-hybrid-aa",
+        "provenance": "manifest"
       }
     ],
     "5a37fb274ff1": [
@@ -98,22 +170,30 @@
         "provenance": "manifest"
       }
     ],
+    "6807e46dcb04": [
+      {
+        "case_id": "c1bc89ddb451",
+        "engine": "Unity",
+        "engine_label": "Unity",
+        "sample": "The Detective Servant",
+        "discriminator": null,
+        "provenance": "manifest"
+      },
+      {
+        "case_id": "eaa76f4a37f0",
+        "engine": "Unity",
+        "engine_label": "Unity",
+        "sample": "My Wife Wants to Be a Professional Cosplayer",
+        "discriminator": null,
+        "provenance": "manifest"
+      }
+    ],
     "2ee6eff84c5a": [
       {
         "case_id": "d51d21d26882",
         "engine": "Artemis",
         "engine_label": "Artemis",
         "sample": "Toshiue Kanojo",
-        "discriminator": null,
-        "provenance": "manifest"
-      }
-    ],
-    "6807e46dcb04": [
-      {
-        "case_id": "eaa76f4a37f0",
-        "engine": "Unity",
-        "engine_label": "Unity",
-        "sample": "My Wife Wants to Be a Professional Cosplayer",
         "discriminator": null,
         "provenance": "manifest"
       }
@@ -132,6 +212,13 @@
       "engine": "AdvHD",
       "sample": "ラブラブお痴験バイト性活",
       "signature": "e0bde5633a1e",
+      "provenance": "manifest"
+    },
+    {
+      "case_id": "24db79fb3b63",
+      "engine": "Unity",
+      "sample": "Kaiju Princess 2",
+      "signature": "2651104a6b65",
       "provenance": "manifest"
     },
     {
@@ -156,6 +243,13 @@
       "provenance": "docs-reconstructed"
     },
     {
+      "case_id": "44d921da165d",
+      "engine": "Unity",
+      "sample": "Bunny's Rent-a-Mom Agency",
+      "signature": "e9701c8cb7a4",
+      "provenance": "manifest"
+    },
+    {
       "case_id": "4728ebd0c0b5",
       "engine": "RPG Maker",
       "sample": "常識改変学園-製品版-",
@@ -168,6 +262,20 @@
       "sample": "SPITE",
       "signature": "524eebf5ec1b",
       "provenance": "docs-reconstructed"
+    },
+    {
+      "case_id": "574c495492e9",
+      "engine": "Unity",
+      "sample": "MiraisMidnight",
+      "signature": "e9701c8cb7a4",
+      "provenance": "manifest"
+    },
+    {
+      "case_id": "584b0629a1ad",
+      "engine": "Unity",
+      "sample": "SexCP_069",
+      "signature": "d7865c6b7ae0",
+      "provenance": "manifest"
     },
     {
       "case_id": "69c521e192f0",
@@ -191,10 +299,45 @@
       "provenance": "docs-reconstructed"
     },
     {
+      "case_id": "91b3bcbb28fb",
+      "engine": "Unity",
+      "sample": "Summer Clover",
+      "signature": "d7865c6b7ae0",
+      "provenance": "manifest"
+    },
+    {
+      "case_id": "a1a354366a74",
+      "engine": "Unity",
+      "sample": "Rebirth Pub",
+      "signature": "6e041c46508d",
+      "provenance": "manifest"
+    },
+    {
       "case_id": "a6915ed8106d",
       "engine": "ExHIBIT",
       "sample": "夕凪荘的S级的女朋友们",
       "signature": "5a37fb274ff1",
+      "provenance": "manifest"
+    },
+    {
+      "case_id": "b7203cd338c9",
+      "engine": "Unity",
+      "sample": "The Neighbor's Wife",
+      "signature": "d7865c6b7ae0",
+      "provenance": "manifest"
+    },
+    {
+      "case_id": "c1bc89ddb451",
+      "engine": "Unity",
+      "sample": "The Detective Servant",
+      "signature": "6807e46dcb04",
+      "provenance": "manifest"
+    },
+    {
+      "case_id": "c71b92f1e886",
+      "engine": "Unity",
+      "sample": "SUMMER-田舎の性活",
+      "signature": "e9701c8cb7a4",
       "provenance": "manifest"
     },
     {

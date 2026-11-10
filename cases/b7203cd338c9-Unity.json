@@ -1,0 +1,97 @@
+{
+  "schema": "cases/1",
+  "case_id": "b7203cd338c9",
+  "engine": "Unity",
+  "engine_label": "Unity",
+  "sample": "The Neighbor's Wife",
+  "game_dir": "D:\\HY\\The Neighbor's Wife",
+  "discriminator": null,
+  "fingerprint": {
+    "signals": [
+      "unity_addressables",
+      "unity_bundle",
+      "unity_bundle_magic",
+      "unity_data",
+      "unity_globalgamemanagers",
+      "unity_managed"
+    ],
+    "score": 135,
+    "threshold": 60,
+    "signature": "d7865c6b7ae0",
+    "engine": "Unity",
+    "reconstructed": false
+  },
+  "decision": {},
+  "timing": {
+    "detect": 0.18,
+    "extract": 37.97,
+    "postprocess": 0.06,
+    "verify": 3.4,
+    "manifest": null,
+    "total": 42.6
+  },
+  "result": {
+    "ok": true,
+    "source": "manifest",
+    "summary": {
+      "images": 671,
+      "audio": 255,
+      "video": null,
+      "total": 926
+    },
+    "media_minutes": 49.3,
+    "counts": {
+      "raw": {
+        "by_ext": {
+          ".png": 671,
+          ".wav": 255
+        },
+        "total": 926,
+        "bytes": 767177587
+      },
+      "final": {
+        "by_ext": {
+          ".png": 671,
+          ".wav": 255
+        },
+        "total": 926,
+        "bytes": 767177587
+      },
+      "converted": {}
+    },
+    "verify": {
+      "verified": true,
+      "image_ok": 671,
+      "image_fail": 0,
+      "audio_ok": 255,
+      "audio_fail": 0,
+      "video_ok": 0,
+      "video_fail": 0,
+      "zero_byte": 0,
+      "fail_total": 0,
+      "media_minutes": 49.3,
+      "nonmedia": 0,
+      "nonmedia_by_ext": {},
+      "status": "ok"
+    },
+    "reconcile": {
+      "expected": 927,
+      "actual": 926,
+      "diff": -1,
+      "method": "archive-index",
+      "explained_by": {
+        "amount": 1,
+        "reason": "Texture2D 引用型资产 Convert 不导出（355/356，缺口在阈值内）"
+      }
+    }
+  },
+  "failures": [],
+  "provenance": {
+    "source": "manifest",
+    "manifest_path": "D:\\GalgameOutput\\The Neighbor's Wife\\manifest.json",
+    "doc_refs": [
+      "AGENTS.md 样本表"
+    ],
+    "generated_at": "2026-11-10T23:44:08+08:00"
+  }
+}
