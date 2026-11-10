@@ -36,9 +36,9 @@
   Rebirth Pub（Unity 6000 混合形态）、MiraisMidnight（IL2CPP 媒体无需 Il2CppDumper）、
   SUMMER-田舎の性活（3344 音频 12 轮全收敛）、Bunny（壳层；真身 LINK6 .arc = KAGUYA 家族
   **用户维持划走**，候选规则 rejected 留档）。
-- **数据现场**：`D:\GalgameOutput\` 13 部**只留记录**（manifest + 类目清单 + _work 日志，
-  4.8M；媒体经用户批准已删，42G→4.8M）+ **aniyome 第 14 部闭环（11-11，媒体暂留待定夺）**；
-  HY 游戏本体在；重解=对源全新跑（判定/经验库齐）。
+- **数据现场**：`D:\GalgameOutput\` **只留记录**（14 部 × manifest + 类目清单 + _work 日志；
+  媒体经用户批准已删，42G→4.8M，2026-11-11 含 aniyome）；HY 游戏本体在；重解=对源全新跑
+  （判定/经验库齐）。**新铁律（2026-11-11 用户定）：任务结束只留最有用数据，占空间的中间产物一律清。**
 - **Agent 攻坚能力（新功能.md 全量落地）**：P0 诊断包/错误码表、P1 经验库 12 条+沙箱 11 动作+
   硬验证器、P2 任务书/候选规则/文档（`agent-workflow.md`）。**用户数据现场样例**：
   `D:\GalgameOutput\aniyome\_work\diagnostic\{diagnostic.json,taskbook.md}`。
@@ -207,9 +207,7 @@
 2. ACE 来源排查（不阻塞；规矩：别在 D:\K\deepseek 树里跑 exe）。
 3. **不要加暗色模式**（2026-11-06 用户明确）；**LINK6/KAGUYA 家族不做**（2026-11-10 复核）。
 4. GitHub 恢复后再 push（账号封禁中，别反复试）。
-5. aniyome 媒体去留等用户定夺（第 14 部闭环，其余 13 部已按「只留记录」清过）；
-   `D:\GalgameOutput\KrkrExtract_Output\`（3.1G 冗余中间产物，已逐字对账进 raw\）去留同问；
-   manual.log 模板两处欠准随下次发包一并修（VF §44.1：缺「先拖游戏 exe」步骤、
+5. manual.log 模板两处欠准随下次发包一并修（VF §44.1：缺「先拖游戏 exe」步骤、
    重跑命令缺 `--organize`）。
 
 ## 🚀 接手顺序（新会话照此四步）
