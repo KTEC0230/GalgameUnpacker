@@ -103,11 +103,11 @@
 >   `D:\K\galgame\unity\vgmstream\`（r2168，FSB5 转换备用，本轮没用上）。
 >   下载路由：**api.github.com 直连可用**；release 资产直连慢（~9KB/s）要 `-C -` 续传 +
 >   1800s 超时；本机代理口 7897/18788 都不通。
-> - **源码状态**：`f0cc7d4` + `94075ca` + `761f867` 已本地提交（显式 add）；
+> - **源码状态**：`f0cc7d4`→`ac463e8` 共 14 个本地提交（显式 add）；
 >   **GitHub 不再推送：用户账号 2026-11-09 起封禁中**——本地提交即唯一记录，
 >   远程同步等账号恢复后再说（别反复试 push）；
->   根上另有用户自己的未跟踪文件 `新功能.md`——不是本轮产物，别动别加；
->   基线 tests=860。
+>   根上另有用户自己的未跟踪文件 `新功能.md`——能力已全部落地（P0/P1/P2），文件是需求出处；
+>   基线 **tests=909 / 0 / 0**，golden 零漂移。
 >
 
 > **📌 当前状态（2026-11-08 深夜收口）**
@@ -152,21 +152,17 @@
 > - **能力面**：10 条引擎链路可用（含 Artemis）；加密 KiriKiri 需 `--allow-gui`
 >   （真实桌面）或人工拖拽 + `--reuse-raw` 收尾；其余引擎判得出但无链路（退出码 2）。
 >
-> **📋 待办（按优先级，2026-11-08 深夜重排）**
-> 1. ~~GUI 启动 / bugfix 构建 / `--allow-gui` 真机闭环~~ **✅ 全部达成**（11-07~11-08）。
-> 2. **Full Unpack 泛化继续**（待办 4）：已验 3 部（教师催眠2 / 堕落妻子 = GUI 链，
->    温泉蒸汽人妻 = 静态链）；aniyome 阻塞于翻译补丁（见上①）；剩余样本
->    昼下がり×2、Doinaka（9 包）。
-> 3. **Unity 队列 10 部（2026-11-09 深夜进度）**：
->    ✅ SexCP_069（rc=0，差 organize 归档视图）、✅ The Neighbor's Wife（rc=0，差 organize）、
->    🔄 Summer Clover（音频抢救循环跑完后 `--reuse-raw --organize` 收尾；游戏根=内层
->    `SummerClover\`）、⬜ The Detective Servant（2019.4.13 经典形态，直接跑）、
->    ⬜ Kaiju Princess 2（data.unity3d 2020.3，老 CLI 能否读待实测）、
->    ⬜ Rebirth Pub（**UnityFS 6000.0**，大概率要 `TOOLBRIDGE_ASSETSTUDIO` 指 AssetStudioNext）、
->    ⬜ IL2CPP 三部（SUMMER-田舎の性活 / MiraisMidnight / Bunny 6000.0.58，工具已备齐见上）。
->    **统一带 `--organize`**；散装视频口径已修进链路（见 verified-findings §40）。
-> 4. **案例库扩容**（待办 5）+ `build_cases.py --from-manifests` 的 manifest 扫描路径
->    要对齐新产物家 `D:\GalgameOutput\`（下次动案例库时一起做）。
+> **📋 待办（按优先级，2026-11-10 重排——Unity 队列 + Agent 能力全部收口后）**
+> 1. ~~Unity 队列 10 部~~ **✅ 9/9 全部跑完**（2026-11-09~10，见增量块；Bunny 只交付壳层，
+>    LINK6 .arc 家族用户维持划走，候选规则已 rejected 留档）。
+> 2. ~~Agent 攻坚能力（新功能.md）~~ **✅ P0/P1/P2 全部交付**（`761f867`/`3782eb6`/`ac463e8`；
+>    用法见 `agent-workflow.md`；aniyome 任务书样例在
+>    `D:\GalgameOutputniyome\_work\diagnostic	askbook.md`）。
+> 3. ~~案例库扩容 + manifest 扫描路径对齐~~ **✅ 完成**（`6f481d5`：22 cases/14 签名，
+>    manifest 绝对路径指向 D:\GalgameOutput，dry-run 命中实测）。
+> 4. **Full Unpack 泛化继续**：已验 3 部（教师催眠2 / 堕落妻子 = GUI 链，
+>    温泉蒸汽人妻 = 静态链）；剩余样本 昼下がり×2、Doinaka（9 包）——
+>    **GUI 链要独占真实桌面，等用户在场**；aniyome 人工拖 3 分钟（manual.log 有步骤）。
 > 5. ACE 来源（不阻塞，见上②）。
 > 6. **不要加暗色模式**：用户 2026-11-06 明确说不做。
 > 7. **用户数据现场**：产物新家是 `D:\GalgameOutput\`，**HY 里不再有产物**
