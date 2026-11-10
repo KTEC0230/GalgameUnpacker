@@ -165,6 +165,7 @@
 | 11-11 | bugfix13 交付 + GalgameOutput 只留记录 + AGENTS 瘦身（2386→220 行）+ **复盘审查**（taskbook 冻结崩溃修复、脚本丢失记录、11 条发现）| 状态块 / VF §43 |
 | 11-11 | **aniyome 人工拖拽闭环**（手势定案：先拖 exe→提取 UI→Full Unpack→逐包拖；落点意外 + 三方对账一致）| VF §44 |
 | 11-11 | 清理落地（8G→286K，「只留有用数据」铁律）+ **ACE 谜案收官**（第三条 Low 标签=真牙齿；写入者=深信服残留 Guarder）| VF §44.4 / §45 |
+| 11-11 凌晨 | **泛化 2/3 闭环**（団地妻 2100 / 欲求不満 3690 零失败）+ **Doinaka=cxdec 定性**（GUI 能列≠能提；头部判别不可用；KrkrExtract 死路双实证；KrkrzExtract 是唯一出路）| VF §46 |
 
 ## 引擎分支速查（实测要点；细节见 verified-findings 对应 §）
 
@@ -206,8 +207,10 @@
 
 ## 📋 待办（2026-11-11）
 
-1. **Full Unpack 泛化**：昼下がり×2、Doinaka（9 包 krkrZ）——GUI 链独占真实桌面
-   ~40 分钟/部，**等用户在场**。
+1. **Doinaka 收尾**：cxdec 定性完毕（VF §46.2），**白天用户按操作单用 KrkrzExtract 重跑**
+   （`D:\GalgameOutput\Doinaka Kyoudai\_work\manual-krkrz.md`）→ 我收货 + `--reuse-raw
+   --organize` + Agent 验收后半（validate + 候选规则）。**注意：GARbro/KrkrExtract 都解不了
+   它，只有 KrkrzExtract 行。**
 2. **不要加暗色模式**（2026-11-06 用户明确）；**LINK6/KAGUYA 家族不做**（2026-11-10 复核）。
 3. GitHub 恢复后再 push（账号封禁中，别反复试）。
 4. manual.log 模板两处欠准随下次发包一并修（VF §44.1：缺「先拖游戏 exe」步骤、

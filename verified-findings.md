@@ -3072,3 +3072,51 @@ aniyome 只留 manifest + 类目清单.csv + _work（286K），与其他 13 部�
   目录挪走即可，无需恐慌。
 - 观察点：若 `D:\GalgameUnpacker\orchestrator` 未来也被打标（现象=冻结 exe 突然写不动
   用户目录），按 §32.3 对照表诊断，把部署目录挪出嫌疑区。
+
+## 46. Full Unpack 泛化：団地妻/欲求不満闭环 + Doinaka=cxdec 实证链（2026-11-11 凌晨）
+
+三部泛化（AGENTS 待办 1）：団地妻、欲求不満人妻 **全链闭环**；Doinaka 定性完毕、
+提取等用户白天按操作单重跑（`D:\GalgameOutput\Doinaka Kyoudai\_work\manual-krkrz.md`）。
+
+### 46.1 闭环两部（GARbro GUI 明文路线）
+
+用户用 GARbro GUI 逐包提取（平铺进 out 目录，我归拢进 raw/）→ `--reuse-raw --organize`：
+
+| 游戏 | 图片 | 音频 | 视频 | organize |
+|---|---|---|---|---|
+| 昼下がりの団地妻 | 860/860 ✓ | 1039/1039 ✓ | 0 | 2100 硬链接失败 0 |
+| 昼下がり欲求不満人妻 | 1503/1503 ✓ | 2088/2088 ✓ | 0 | 3690 硬链接失败 0 |
+
+- 団地妻媒体在 **`arc/` 子目录**（8 包 825MB + 顶层 data.xp3 3.8M）——
+  `_kirikiri_xp3` 顶层有包就不看子目录 → 管线侦察只看到 3.8M。**缺口候选**（rglob 合并）。
+- 两部包 `garbro -l` 全 unknown format 但 GUI 全能列 = 坑 1 假阴性再+2。
+- 对账口径：11 包全加密同款 no-index-available；魔数普查验证真内容（WAV/OGG/TLG）。
+
+### 46.2 Doinaka：cxdec 定性（新坑形态 + 新判据）
+
+- **坑 1 新形态：GUI 能列 ≠ 能提取**。用户 GUI 复核「能列」→ 提取 6540 文件全是
+  乱码（头部魔数全随机、无扩展名、单汉字名）。根因：**cxdec 索引明文 + 条目数据
+  逐包加密**，GARbro 无此游戏密钥表，把密文当原始字节倒盘。
+- 头部魔数判别**不可用**：krkrZ 系头部（`58 50 33 0d 0a 20 0a 1a 8b 67 01 17`）在
+  明文（兼职人妻）与加密（aniyome）逐字相同——7 样本标定实证。
+- 索引实测：尾部 int64 索引偏移（头 0x20）→ flag(1)+usize(8)+csize(8)+zlib；
+  解出 **`Hxv4` 序列化**（cxdec 家族标记）；csize>usize（先加密后压缩的特征）；
+  解压后熵 3.4（明文结构）。
+- **KrkrExtract 死路新实证**：自动链走到最远（注入 ✓、Full Unpack 自动勾选 ✓、
+  拖包 ✓）→ **拖包被接受后 12 分钟 0 files 0.0 MB**（§1026「拖放被接受、任务静默
+  结束」同款）。手动+自动双实证，此路封死。
+- **KrkrzExtract 能解**（用户两次运行 355 真文件，TLG5.0/TJS2/OGG/MZ/OTTO 魔数全验）
+  但用法未破：176KB 启动器壳 + V2Link 插件 DLL（KiriKiri 插件接口，非可编程库）；
+  无参秒退；拖 xp3 = FATAL "Failed to launch process"（它要的是游戏 exe）；
+  带游戏 exe 参数能拉起游戏但注入未生效（模块未加载、无 dump）——成功手势与用户
+  手动操作的具体方式相关，**等白天重跑**（操作单已留）。
+- 用户中断产物已隔离：`_work/krkrz_partial_quarantine/`（355 真文件）+
+  `_work/krkr_partial_index_dumps/`（两套索引各 9 份）。
+
+### 46.3 Agent 实战验收进度（§43 P1-1，以 Doinaka 为载体）
+
+diagnose → taskbook → plan → **run**（hex_inspect + garbro_list×2，白名单动作实跑）
+四步闭环完成；经验检索命中 `garbro-console-false-negative`（指导 GUI 复核）与
+`krkr-encrypted-xp3`；验证器正确拒绝空沙箱（「自述成功无效」红线工作）。
+**validate 最终裁决 + 候选规则**（cxdec 列表≠可提、头部判别不可用两条素材）
+待 Doinaka 提取完成后一并闭环。
