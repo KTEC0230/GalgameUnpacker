@@ -26,7 +26,7 @@
 ## 📌 当前状态（2026-11-11）
 
 - **基线**：`tests=909 / 0 failures / 0 errors`（skip 16~20 随环境波动）+ golden 8 fixture +
-  12 真实样本零漂移。**源码 20 个本地提交**（HEAD 附近：`f128216` 数据现场、`36260ec` 交付、
+  12 真实样本零漂移。**源码 22 个本地提交**（HEAD 附近：`f128216` 数据现场、`36260ec` 交付、
   `ac463e8` Agent P2），工作树只余用户自己的 `新功能.md`（Agent 能力的需求出处，勿动勿加）。
 - **能力面**：10 条引擎链路（Ren'Py / KiriKiri / RPG Maker / Yu-Ris / AdvHD / ExHIBIT /
   CatSystem2 / Unity / Artemis / Tyrano 判得出无链路 rc=2）；加密 KiriKiri 走 `--allow-gui`
@@ -158,7 +158,7 @@
 | 11-08 | Unity bugfix11（同名去重） | §39 |
 | 11-09~10 | Unity 队列 9/9 + 散装视频 + bugfix12/13 + 离线音频管线 + 抢救配方 | §40 / §41 |
 | 11-09~10 | **Agent 攻坚 P0/P1/P2**（诊断包/经验库/沙箱/验证器/六命令） | §42 |
-| 11-11 | bugfix13 便携包交付 + 标准路径重部署 + GalgameOutput 只留记录 | 状态块/git log |
+| 11-11 | bugfix13 交付 + GalgameOutput 只留记录 + AGENTS 瘦身（2386→220 行）+ **复盘审查**（taskbook 冻结崩溃修复、脚本丢失记录、11 条发现）| 状态块 / VF §43 |
 
 ## 引擎分支速查（实测要点；细节见 verified-findings 对应 §）
 
