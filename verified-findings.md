@@ -2874,3 +2874,39 @@ BySource 分组在这个 bundle 上 20 分钟跑不完一批 12 名（别用）�
 CAB → 查 `*_bundle_unpacked/` 目录（repack 抽流）→ 原始 bundle 还在就用单文件输入抢救**；
 ② AssetStudio 系工具的「每批导出上限」是隐性资源上限，批越小越可信，跟坑 4 同族；
 ③ 给游戏目录做减法的 repack 会制造「判定/枚举正常、交付残缺」的假象——**对账是唯一防线**。
+
+## 42. Agent 攻坚能力 P0/P1/P2 交付（2026-11-09~10，`761f867`/`3782eb6`/`ac463e8`）
+
+用户需求书 `新功能.md`（会话根，用户自己的文件）的完整落地：目标不是「加 AI 按钮」，
+而是把作者本地攻坚动作封装成「普通用户 + 软件 + 任意 Agent」组合能力。
+
+### 三批交付
+
+| 批 | 内容 | 提交 |
+|---|---|---|
+| P0 | `errorcodes.py`（17 错误码唯一出处 + 源码扫描护栏防漂移）、`diagnostics.py`（自包含诊断包：错误码/指纹/输入魔数/真实报错原文/案例命中/日志/环境/契约，失败自动落 `<out>/_work/diagnostic/`，写包永不抛）、`agent_contract.json` 构建期生成进包、manual 复用 | `761f867` |
+| P1 | `experiences.py` 检索器（error_code/报错串/魔数/目录特征打分，**只报告不决策**）+ `rules/experiences/` 首批 12 条 + `sandbox/actions.py` 11 动作执行体（参数 schema + Sandbox 路径围栏 + toolbridge 薄封装）+ `sandbox/validator.py` 硬验证器（ok/partial/failed，反例测试齐全）+ `agent_cli.py` 四命令 | `3782eb6` |
+| P2 | `taskbook`（诊断包→可粘贴任务书）+ `candidate`（候选规则产出，白名单外动作硬拒）+ `agent-workflow.md` 使用文档（怎么用/怎么审规则/怎么扩展白名单） | `ac463e8` |
+
+### 红线（改这块代码前重读）
+
+Agent 产出未过验证器一律不算成功；白名单外硬失败；沙箱只读源（copy 不 move）；
+候选规则**永不自动转正**（人工 `git mv` 到 experiences/，rejected 也留档——范例
+`link6-kaguya-arc-20261110.json`）；csc_build 只认仓库自带 .cs；不联网。
+
+### 验收（aniyome 真实失败端到端）
+
+diagnose（11 xp3 全列不出 + gui_error 原文）→ plan（krkr-encrypted-xp3 满分 10 命中）
+→ run（hex 魔数 5850330d…、garbro 假阴性如实留痕）→ validate(ok)。冻结态四件套
+（doctor/gui-smoke/dry-run/--agent-diagnose）全过。
+
+### 踩坑
+
+① `cmd_run` 局部变量名 `sandbox` 遮蔽顶层 `import sandbox.actions` → UnboundLocalError
+（模块名与局部变量同名是隐形雷）；② agent_cli/sandbox/experiences 起初函数级 import，
+违打包纪律——已全部改顶部 import（§19.2）；③ `--agent-*` 旗标转发是**哑转发**
+（旗标后跟子命令完整参数），新命令要记得加进 orchestrator 的 `_AGENT_FLAGS` 元组。
+
+### 维护
+
+动作白名单扩展五步走 + 审规则三查 + 红线清单，见 `agent-workflow.md`（唯一定义处）。
