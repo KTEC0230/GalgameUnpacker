@@ -148,21 +148,43 @@ def cmd_taskbook(args: argparse.Namespace) -> int:
         sandbox_dir=args.sandbox or "<建议：诊断包旁新建 sb/ 目录>",
     )
     out = diag_path.parent / "taskbook.md"
-    out.write_text(text, encoding="utf-8", newline="\n")
-    print(f"[OK] 任务书写入：{out}", file=sys.stderr)
-    _emit({"taskbook": str(out), "candidates": len(plan["candidates"]),
-           "allowed_actions": plan["allowed_actions"]})
+    # fail-soft（2026-11-11 冻结实测）：新构建的未签名 exe 在陌生目录写盘会被
+    # 按进程信誉拦（PermissionError，同文件源码态可写）——任务书是本轮唯一交付物，
+    # 写不进去就退回 cwd，再不行直接把全文塞进 JSON，绝不崩、绝不空手。
+    import os
+    written = None
+    for cand in (out, Path.cwd() / "taskbook.md"):
+        try:
+            cand.write_text(text, encoding="utf-8", newline="\n")
+            written = cand
+            break
+        except OSError:
+            continue
+    if written is not None:
+        print(f"[OK] 任务书写入：{written}", file=sys.stderr)
+        _emit({"taskbook": str(written), "candidates": len(plan["candidates"]),
+               "allowed_actions": plan["allowed_actions"]})
+    else:
+        print("[WARN] 任务书写不进任何候选位置，全文放 JSON 里", file=sys.stderr)
+        _emit({"taskbook": None, "taskbook_text": text,
+               "candidates": len(plan["candidates"]),
+               "allowed_actions": plan["allowed_actions"]})
     return 0
 
 
 def cmd_candidate(args: argparse.Namespace) -> int:
     """验证通过的解法 → 候选规则 JSON（落 rules/candidates/，人工审核后人工转正）。"""
+    import hashlib
     diag = json.loads(Path(args.diagnostic).read_text(encoding="utf-8"))
+    # 审计哈希必须**可复现**：内置 hash() 按进程随机化（PYTHONHASHSEED），同诊断包
+    # 两次运行得出不同值，审计链就断了——用 sha256。
+    diag_hash = args.hash or hashlib.sha256(
+        json.dumps(diag, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()[:16]
     entry = {
         "id": args.id,
         "status": "candidate",
         "submitted_by": args.by or "user",
-        "diagnostic_hash": args.hash or str(abs(hash(json.dumps(diag, sort_keys=True)))),
+        "diagnostic_hash": diag_hash,
         "symptoms": {
             "error_code": [diag.get("error_code")] if diag.get("error_code") else [],
             "tool_error_strings": ([diag["gui_error"][:60]]
@@ -185,11 +207,20 @@ def cmd_candidate(args: argparse.Namespace) -> int:
         return 2
     here = Path(__file__).resolve().parent
     out_dir = Path(args.library) if args.library else here / "rules" / "candidates"
-    out_dir.mkdir(parents=True, exist_ok=True)
     import time as _time
     out = out_dir / f"{args.id}-{_time.strftime('%Y%m%d')}.json"
-    out.write_text(json.dumps(entry, ensure_ascii=False, indent=2) + "\n",
-                   encoding="utf-8", newline="\n")
+    # fail-soft：冻结态下 rules/ 可能在只读安装目录里——写不进就交回给调用方处理，
+    # 给出明确出路而不是裸 traceback。
+    try:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(entry, ensure_ascii=False, indent=2) + "\n",
+                       encoding="utf-8", newline="\n")
+    except OSError as exc:
+        payload = json.dumps(entry, ensure_ascii=False, indent=2)
+        print(f"[WARN] 候选规则写不进 {out_dir}（{exc}）；全文放 JSON 里，"
+              f"请人工保存到仓库 rules/candidates/", file=sys.stderr)
+        _emit({"candidate": None, "status": "unwritten", "entry_text": payload})
+        return 1
     print(f"[OK] 候选规则写入（待人工审核转正）：{out}", file=sys.stderr)
     _emit({"candidate": str(out), "status": "candidate"})
     return 0
