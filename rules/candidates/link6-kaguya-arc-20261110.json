@@ -1,6 +1,8 @@
 {
   "id": "link6-kaguya-arc-candidate",
-  "status": "candidate",
+  "status": "rejected",
+  "rejected_at": "2026-11-10",
+  "rejected_reason": "KAGUYA「LINK」家族用户 2026-10-26 明确不做；2026-11-10 复核维持（Bunny 只交付 Unity 壳层）",
   "submitted_by": "zcode-session-20261110",
   "diagnostic_hash": "manual-bunny-rent-a-mom",
   "symptoms": {

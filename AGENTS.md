@@ -157,7 +157,7 @@
 >    LINK6 .arc 家族用户维持划走，候选规则已 rejected 留档）。
 > 2. ~~Agent 攻坚能力（新功能.md）~~ **✅ P0/P1/P2 全部交付**（`761f867`/`3782eb6`/`ac463e8`；
 >    用法见 `agent-workflow.md`；aniyome 任务书样例在
->    `D:\GalgameOutputniyome\_work\diagnostic	askbook.md`）。
+>    `D:\GalgameOutput\aniyome\_work\diagnostic\taskbook.md`）。
 > 3. ~~案例库扩容 + manifest 扫描路径对齐~~ **✅ 完成**（`6f481d5`：22 cases/14 签名，
 >    manifest 绝对路径指向 D:\GalgameOutput，dry-run 命中实测）。
 > 4. **Full Unpack 泛化继续**：已验 3 部（教师催眠2 / 堕落妻子 = GUI 链，
