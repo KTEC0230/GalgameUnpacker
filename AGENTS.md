@@ -198,6 +198,7 @@
 | `galgame-ai-unpack-workflow-plan.md` | 需要完整方案、Windows 打包、许可证/法律时 |
 | `vn-unpacker-verification.md` | 需要第三方工具核实状态时 |
 | `software-plan.md` | **软件化路线与进度**：四阶段、阶段 3（打包/GUI）完成状态 |
+| `agent-workflow.md` | **Agent 攻坚怎么用/怎么审规则/怎么扩展白名单**（新功能 P2 文档） |
 | `_ui/` | 界面截图与 `shot_app.py`（PrintWindow 渲染，不依赖前台窗口）—— 改 UI 后用它核对 |
 
 ## 工作区布局（2026-11-01 实测：根目录 **70 个文件 + 11 个子目录**，含 C# 解码器与黑盒工具）

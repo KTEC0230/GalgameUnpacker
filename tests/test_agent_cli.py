@@ -87,3 +87,45 @@ def test_orchestrator_forwards_agent_flags(tmp_path):
         errors="replace", cwd=str(ROOT))
     payload = json.loads(r.stdout)
     assert payload["error_code"] == "extract-failed" and r.returncode == 0
+
+
+# ---------------------------------------------------------------- P2
+
+def _diag_file(tmp_path: Path) -> Path:
+    import diagnostics as dg
+    mp = _failed_manifest(tmp_path / "out", tmp_path / "game")
+    f = tmp_path / "diag.json"
+    f.write_text(json.dumps(dg.build_from_manifest(mp), ensure_ascii=False),
+                 encoding="utf-8")
+    return f
+
+
+def test_taskbook_writes_markdown(tmp_path, capsys):
+    df = _diag_file(tmp_path)
+    rc = agent_cli.main(["taskbook", "--diagnostic", str(df),
+                         "--source", str(tmp_path / "game")])
+    out = json.loads(capsys.readouterr().out)
+    tb_file = Path(out["taskbook"])
+    assert rc == 0 and tb_file.is_file()
+    text = tb_file.read_text(encoding="utf-8")
+    assert "解包攻坚任务书" in text
+    assert "extract-failed" in text and "白名单" in text
+    assert str(df.resolve()) in text, "诊断包路径必须写进任务书"
+
+
+def test_candidate_writes_and_validates_actions(tmp_path, capsys):
+    df = _diag_file(tmp_path)
+    lib = tmp_path / "cand"
+    rc = agent_cli.main(["candidate", "--diagnostic", str(df), "--id", "test-rule",
+                         "--hypothesis", "测试假设",
+                         "--actions", "garbro_list,hex_inspect",
+                         "--library", str(lib)])
+    out = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    entry = json.loads(Path(out["candidate"]).read_text(encoding="utf-8"))
+    assert entry["status"] == "candidate" and entry["symptoms"]["error_code"] == ["extract-failed"]
+    # 白名单外动作硬拒
+    rc2 = agent_cli.main(["candidate", "--diagnostic", str(df), "--id", "evil",
+                          "--hypothesis", "x", "--actions", "run_anything",
+                          "--library", str(lib)])
+    assert rc2 == 2

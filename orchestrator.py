@@ -64,6 +64,10 @@ import organize                        # noqa: E402  （按类型归档：清单
 import manual                          # noqa: E402  （人工介入方案：失败时给可执行步骤，见 manual.py）
 import faillog                         # noqa: E402  （失败日志：写软件根目录，与产物解耦）
 import diagnostics                     # noqa: E402  （诊断包：失败时给 Agent 的第一手材料）
+import agent_cli                       # noqa: E402  （Agent 四命令；顶部 import 也是 PyInstaller 打包清单依据，§19.2）
+import experiences                     # noqa: E402  （经验库检索，agent_cli 依赖）
+import sandbox.actions                 # noqa: E402  （动作白名单执行体）
+import sandbox.validator               # noqa: E402  （硬验证器）
 import rpa_tool                        # noqa: E402
 import toolbridge as tb                # noqa: E402
 import rpa_extract_organized           # noqa: E402  （兄弟链路一律 in-process 调 main()，见 _run_sibling）
@@ -3040,7 +3044,8 @@ def main(argv: list[str] | None = None) -> int:
         return _launch_gui(argv)
     # Agent 攻坚四命令（新功能 P1）：在 argparse 之前分流——它们有自己的参数
     # 形状（game_dir/--out 不适用），与 --doctor/--gui 同款待遇。
-    _AGENT_FLAGS = ("--agent-diagnose", "--agent-plan", "--agent-run", "--agent-validate")
+    _AGENT_FLAGS = ("--agent-diagnose", "--agent-plan", "--agent-run", "--agent-validate",
+                    "--agent-taskbook", "--agent-candidate")
     for _af in _AGENT_FLAGS:
         if _af in argv:
             idx = argv.index(_af)
