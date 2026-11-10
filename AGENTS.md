@@ -94,8 +94,12 @@
 >   `orchestrator.py "D:/HY/Summer Clover/SummerClover" --out "D:\GalgameOutput\Summer Clover"
 >   --reuse-raw "D:\GalgameOutput\Summer Clover\raw" --organize` 出正式交付（**游戏根用内层
 >   SummerClover 目录**，外层判定只有 30 分）。
-> - **部署目录没了**：`D:\GalgameUnpacker\` 整个被用户清盘删除；本轮全部**源码态直跑**
->   （HEAD = bugfix11 同代码，等价）；zip 还在 `packaging/Output/` 可随时重部署，要不要重部署问用户。
+> - **✅ 交付已更新（2026-11-11）**：便携包
+>   `packaging/Output/GalgameUnpacker-0.8.2-bugfix13-portable.zip`（142.0 MiB，
+>   SHA256 `e0719391cc23…cd43ec`，含 bugfix12/13 + 散装视频 + Agent P0/P1/P2 全部能力），
+>   **标准路径 `D:\GalgameUnpacker\orchestrator` 已重部署**（旧部署目录被用户清盘删除后重建）。
+>   冻结四件套自检全过：doctor / gui-smoke / 教师催眠2 dry-run（案例命中兼职人妻+教师催眠1）/
+>   `--agent-diagnose`（aniyome 包在冻结态可出）。GitHub 不推（账号封禁中），本地包即交付。
 > - **工具已备齐**（IL2CPP 三部随时可开）：`D:\K\galgame\unity\Il2CppDumper\`（Perfare
 >   v6.7.46 win 版，exe 冒烟能启动）、`D:\K\galgame\unity\AssetStudioNext\`（= 决策树里
 >   「AssetStudioNext」的实证出处 **Razviar/assetstudio v2.4.1** net8.0，CLI 旗标与旧版
@@ -103,7 +107,7 @@
 >   `D:\K\galgame\unity\vgmstream\`（r2168，FSB5 转换备用，本轮没用上）。
 >   下载路由：**api.github.com 直连可用**；release 资产直连慢（~9KB/s）要 `-C -` 续传 +
 >   1800s 超时；本机代理口 7897/18788 都不通。
-> - **源码状态**：`f0cc7d4`→`ac463e8` 共 14 个本地提交（显式 add）；
+> - **源码状态**：`f0cc7d4`→`f128216` 共 19 个本地提交（显式 add）；
 >   **GitHub 不再推送：用户账号 2026-11-09 起封禁中**——本地提交即唯一记录，
 >   远程同步等账号恢复后再说（别反复试 push）；
 >   根上另有用户自己的未跟踪文件 `新功能.md`——能力已全部落地（P0/P1/P2），文件是需求出处；
