@@ -2972,3 +2972,49 @@ diagnose（11 xp3 全列不出 + gui_error 原文）→ plan（krkr-encrypted-xp
 救援脚本入库**（P1-2 的放大器）。职责边界清晰：软件=标准链路+记录，Agent=白名单内
 假设验证，验证器=裁判，人工=规则转正——该分层在实现里如实落地，无越权路径
 （csc 白名单、写盘围栏、候选不自动转正均有测试钉住）。
+
+## 44. aniyome 人工拖拽闭环：手势定案 + 落点意外（2026-11-11）
+
+第 2 部加密 krkrZ 走「人工拖 + `--reuse-raw`」全链闭环（第 1 部教师催眠2，§32.4）。
+自动化链（`--allow-gui`）在本样本 40s 找不到提取 UI（extract.log：窗口未出现、进程仍在，
+该 pid 只有游戏自身窗口 + Default IME），按 manual.log 转人工。游戏 `D:\HY\aniyome`
+（11 包 2.87G，`Mai@KF.dll` + `aniyome.exe.org` 保护形态，与教师催眠2 同族）。
+
+### 44.1 手势定案（纠正 manual.log 模板的误导）
+
+真机实证的正确手势（与 §34「Lite 主窗口只收 exe」的弯路记录一致）：
+
+1. 打开 `KrkrExtract.Lite.exe`，把**游戏 exe**（aniyome.exe）拖进 Lite 主窗口
+   ——主窗口只收 exe，直接拖 xp3 毫无反应；
+2. 游戏被拉起，挂在游戏进程上的**提取 UI 小窗口**出现；
+3. 在提取 UI 上勾 **Full Unpack**（默认只勾 Decompile Script，不勾则零媒体，§32.5）；
+4. 11 个 xp3 **逐个**拖进提取 UI（从小到大），等进度条走完再拖下一个；
+5. 弹出的对话框一律**不点**（krkrZ 致命框点了=游戏退出=提取中止，§35.1），
+   游戏窗口也不关（提取 UI 挂在游戏进程上）。
+
+manual.log 模板写「打开 Lite → 把所有 .xp3 拖进 KrkrExtract 窗口」，省略了
+「先拖游戏 exe」这步，照做会卡死在第 2 步；且重跑命令（`manual.py:127`）不含
+`--organize`，照抄会少类目清单。**模板两处欠准，改代码随下次发包**（低优先级）。
+
+### 44.2 落点意外：KrkrExtract_Output 不在模板说的位置
+
+人工拖完后 11 包产物落在 **`D:\GalgameOutput\KrkrExtract_Output\`**（每包一个同名
+子目录），而非模板说的「KrkrExtract 目录下」（`bin\krkr\` 实测无 Output 残留）。
+写入者未查明（输出目录记忆/跟随拖放来源？）。**教训：人工拖后按产物实测找落点，
+别按模板路径找。**
+
+### 44.3 提取与收尾数字（三方对账一致）
+
+- 11 包 → **4636 文件 / 3.1G**：ogg 2286、png 1038、tlg 703、wav 391、wks 147、
+  wmv 33、wcsv 26、ttf 7、sli 2、jpg 2、mpg 1。人工场景无 UI 状态可查，完成判定
+  口径 = **30 秒两次计数稳定 + 扩展名普查三类媒体全有**（防 §32.5 只解脚本形态）。
+- 收集：cp 到 `D:\GalgameOutput\aniyome\raw\`（保 per-package 子目录，
+  4636==4636 才动手跑管线；KrkrExtract_Output 原件保留到对账过后再问去留）。
+- `--reuse-raw` rc=0：postprocess 703 tlg→png（514s，0 fail）；verify
+  **图片 1743（png 1038+tlg 703+jpg 2）/ 音频 2677（ogg 2286+wav 391）/
+  视频 34（wmv 33+mpg 1）全过、失败 0**，182 非媒体显式报出；11 包全加密 →
+  对账 no-index-available（同教师催眠2 口径）。
+- 首轮漏 `--organize` → 类目清单缺失，补跑一轮（png 走 `_converted_fresh` 零重复
+  解码，~100s）：organize **4636 硬链接失败 0**，raw == 分类视图 == CSV 三方一致
+  （1743/2677/34/182）。交付形态齐：manifest + 类目清单.csv + 分类/ + png/ + raw/。
+- 数据现场第 14 部；媒体暂留（用户定夺后照「只留记录」口径处理）。

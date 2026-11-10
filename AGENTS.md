@@ -36,8 +36,9 @@
   Rebirth Pub（Unity 6000 混合形态）、MiraisMidnight（IL2CPP 媒体无需 Il2CppDumper）、
   SUMMER-田舎の性活（3344 音频 12 轮全收敛）、Bunny（壳层；真身 LINK6 .arc = KAGUYA 家族
   **用户维持划走**，候选规则 rejected 留档）。
-- **数据现场**：`D:\GalgameOutput\` **只留记录**（13 部 × manifest + 类目清单 + _work 日志，
-  4.8M；媒体经用户批准已删，42G→4.8M）；HY 游戏本体在；重解=对源全新跑（判定/经验库齐）。
+- **数据现场**：`D:\GalgameOutput\` 13 部**只留记录**（manifest + 类目清单 + _work 日志，
+  4.8M；媒体经用户批准已删，42G→4.8M）+ **aniyome 第 14 部闭环（11-11，媒体暂留待定夺）**；
+  HY 游戏本体在；重解=对源全新跑（判定/经验库齐）。
 - **Agent 攻坚能力（新功能.md 全量落地）**：P0 诊断包/错误码表、P1 经验库 12 条+沙箱 11 动作+
   硬验证器、P2 任务书/候选规则/文档（`agent-workflow.md`）。**用户数据现场样例**：
   `D:\GalgameOutput\aniyome\_work\diagnostic\{diagnostic.json,taskbook.md}`。
@@ -159,6 +160,7 @@
 | 11-09~10 | Unity 队列 9/9 + 散装视频 + bugfix12/13 + 离线音频管线 + 抢救配方 | §40 / §41 |
 | 11-09~10 | **Agent 攻坚 P0/P1/P2**（诊断包/经验库/沙箱/验证器/六命令） | §42 |
 | 11-11 | bugfix13 交付 + GalgameOutput 只留记录 + AGENTS 瘦身（2386→220 行）+ **复盘审查**（taskbook 冻结崩溃修复、脚本丢失记录、11 条发现）| 状态块 / VF §43 |
+| 11-11 | **aniyome 人工拖拽闭环**（手势定案：先拖 exe→提取 UI→Full Unpack→逐包拖；落点意外 + 三方对账一致）| VF §44 |
 
 ## 引擎分支速查（实测要点；细节见 verified-findings 对应 §）
 
@@ -202,11 +204,12 @@
 
 1. **Full Unpack 泛化**：昼下がり×2、Doinaka（9 包 krkrZ）——GUI 链独占真实桌面
    ~40 分钟/部，**等用户在场**。
-2. **aniyome 收尾**：3 分钟人工拖 xp3（步骤 `D:\GalgameOutput\aniyome\_work\manual.log`）→
-   `--reuse-raw` 收尾——**等用户在场**。
-3. ACE 来源排查（不阻塞；规矩：别在 D:\K\deepseek 树里跑 exe）。
-4. **不要加暗色模式**（2026-11-06 用户明确）；**LINK6/KAGUYA 家族不做**（2026-11-10 复核）。
-5. GitHub 恢复后再 push（账号封禁中，别反复试）。
+2. ACE 来源排查（不阻塞；规矩：别在 D:\K\deepseek 树里跑 exe）。
+3. **不要加暗色模式**（2026-11-06 用户明确）；**LINK6/KAGUYA 家族不做**（2026-11-10 复核）。
+4. GitHub 恢复后再 push（账号封禁中，别反复试）。
+5. aniyome 媒体去留等用户定夺（第 14 部闭环，其余 13 部已按「只留记录」清过）；
+   manual.log 模板两处欠准随下次发包一并修（VF §44.1：缺「先拖游戏 exe」步骤、
+   重跑命令缺 `--organize`）。
 
 ## 🚀 接手顺序（新会话照此四步）
 
