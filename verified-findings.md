@@ -3025,3 +3025,50 @@ manual.log 模板写「打开 Lite → 把所有 .xp3 拖进 KrkrExtract 窗口�
 `raw\`（3.1G）/ `png\`（2.3G）/ `分类\`（硬链接）全删，D 盘 350G→342G；
 aniyome 只留 manifest + 类目清单.csv + _work（286K），与其他 13 部同形态。
 此口径升格为**新铁律**进 AGENTS 数据现场段。重解路径 = 对源全新人工拖（§44.1 手势）。
+
+## 45. ACE 来源排查收官：第三条 ACE + Low 标签才是真牙齿 + 写入者=深信服残留 Guarder（2026-11-11）
+
+背景：§32.3「Low 完整性之谜」、§35.4 两条非继承 ACE 写入者未查明，本节收官。
+
+### 45.1 新事实
+
+1. **第三条 ACE**：icacls 现测 `D:\K\deepseek` 根，非标准项共**三条**（§35.4 只记了两条）：
+   - `Everyone:(CI)(DENY)(DC)`（仅 CI，不传播到文件）
+   - `S-1-4-466530695-238761456:(OI)(CI)(W,D,DC)`（伪 SID 不在任何用户令牌 → 永不匹配）
+   - **`Mandatory Label\Low Mandatory Level:(OI)(CI)(NW)`** ← §35.4 漏记的第三条
+2. **§32.3 谜底**：Low 标签打在目录上、全树继承 → 从树内启动的 exe 进程 IL 被压到 Low
+   （进程 IL = min(用户 IL, 目录标签)）。「同一 exe 拷到 %TEMP%/D:\gtool 就 High」的
+   对照表全部解释。
+3. **deny 两条实测无牙**：树内建文件 → `rm` 删除成功（DC 仅 CI 不覆盖文件；删文件靠
+   文件自身 allow 即可，父目录 DC deny 挡不住；伪 SID 不在令牌）。**真正起作用的只有
+   Low 标签**——「别在树里跑 exe」规矩的真实机制。
+4. **全盘普查**（D:\ 与 C:\ 根级 + 用户目录一层 + D:\K 两层，99 目录）：同款 deny 组合
+   全机唯一；各处 `Everyone:(DENY)(RD)` 均为 Windows junction 默认保护。唯一同族痕迹：
+   `D:\K\zcode\_tmp_unity`（11-11 00:38 创建的临时目录，目录本体一条**非继承** Low 标签）
+   → **写入者今天仍在活跃**。
+5. **自家工具排除**：deepseek 全部 *.py、DiskJanitor *.py/*.cs 无任何 ACL/完整性标签
+   写入代码；火绒（sysdiag/HipsDaemon）是驱动级拦截，从不写 ACE。
+6. **写入者证据**：EasyConnect 已卸载但深信服保护栈仍在运行（SangforPWEx 服务 RUNNING、
+   SangforUDProtectEx 进程、SangforVnic 驱动）；其二进制含 `AddAccessAllowedAce` 导入串 +
+   **`[Guarder] init(%s) … securityDirectory`** 日志串 + `SecurityDesktopModule` 模块名；
+   `SangforRule.dat`（9344B）加密不可读。公开资料广泛记录其卸载残留、互相保护、难根除。
+
+### 45.2 结论（事实/推测分离）
+
+- **事实**：锁为「目录守护」形态；写入者至 2026-11-11 仍活跃；自家工具与火绒排除；
+  deny 两条无效、Low 标签有效；SID 数字学（hex/时间戳）无线索，留档不猜。
+- **强推测**：写入者 = SangforUDProtectEx 的 Guarder（securityDirectory）机制，按
+  「未签名/低信誉 exe 频繁活动的目录」打标+锁——与 AGENTS 已记录的「深信服按进程信誉
+  写过滤」（antivirus-false-positives §5）同源。精确时间与触发规则无法取证
+  （4670 审计未开、Rule.dat 加密），按纪律不再深挖。
+
+### 45.3 处置：维持现状 + 规矩升级
+
+- **不清 ACE**：deny 无牙、Low 标签只咬「树内启动的 exe」；标准路径
+  `D:\GalgameUnpacker\orchestrator` 在树外（High 实证）；拔 Sangfor 残留有断网先例
+  （公开案例）且写入者活跃会再打标——得不偿失。
+- 规矩升级表述：**exe 一律不在 D:\K\deepseek 树内启动**（机制=树内目录带 Low IL 标签，
+  进程被压到 Low 写不动用户目录）。树外目录若出现同款标签（如 _tmp_unity），把工作
+  目录挪走即可，无需恐慌。
+- 观察点：若 `D:\GalgameUnpacker\orchestrator` 未来也被打标（现象=冻结 exe 突然写不动
+  用户目录），按 §32.3 对照表诊断，把部署目录挪出嫌疑区。
