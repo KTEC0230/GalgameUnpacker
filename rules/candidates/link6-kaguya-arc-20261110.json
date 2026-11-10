@@ -1,0 +1,29 @@
+{
+  "id": "link6-kaguya-arc-candidate",
+  "status": "candidate",
+  "submitted_by": "zcode-session-20261110",
+  "diagnostic_hash": "manual-bunny-rent-a-mom",
+  "symptoms": {
+    "error_code": [],
+    "tool_error_strings": ["unknown format"],
+    "magic_hex_prefix": ["4c494e4b36"],
+    "dir_features": ["unity-data-dir", "streaming-assets"]
+  },
+  "hypothesis": "Unity 壳 + KAGUYA「LINK6」归档混血（Bunny's Rent-a-Mom Agency 实测）：StreamingAssets 下 16 个 .arc（LINK6 魔数 + [SCR-PARAMS]v05.7 的 params.dat）。GARbro 能列 voice/bgm/sed/scr（4445 语音 + 18 BGM + 150 剧本），cg0x.arc 七个列不出（unknown format，疑加密变体）。",
+  "actions": ["garbro_list", "garbro_extract", "hex_inspect"],
+  "constraints": {
+    "max_runs": 24,
+    "requires": "注意与 pf8/.pfs 家族的「LINK」区分（决策树 §LINK）；cg 包未解前不承诺全量"
+  },
+  "validation": {
+    "kind": "count_at_least",
+    "expect": "garbro_list 条目数与解包产物数一致（音频/剧本部分）"
+  },
+  "negative_examples": [
+    "魔数不是 LINK6 的 .arc（其它引擎同名扩展）不适用",
+    "划走清单背景：KAGUYA LINK 家族用户 2026-10-26 明确不做——本条只是记录，不是开工许可"
+  ],
+  "confidence": 0.7,
+  "source": "AGENTS.md 2026-11-10 节（Bunny 真机）",
+  "applies_to": {"engine": "Unity"}
+}

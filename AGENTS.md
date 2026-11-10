@@ -61,9 +61,15 @@
 > - **IL2CPP 三部实锤（2026-11-10）**：媒体产出线**不需要 Il2CppDumper**——
 >   MiraisMidnight（2022.3.10f1）用 AssetStudioNext 直接枚举 11511 资产、
 >   **闭环 rc=0（reuse 366.9s：图片 6589/音频 4894 零失败，媒体 523.8 分钟）**；
->   SUMMER-田舎の性活 2020.3.19f1 跑链中（音频 3344 条收敛慢，第 4 轮 2012 待补，
->   轮次走完按诚实缺口落地，尾部可用 §41 bundle 配方补）；Bunny（6000 系）
->   排队。Il2CppDumper 只在要 MonoBehaviour/自定义类型时才需要。
+>   **SUMMER-田舎の性活 ✅ rc=0（图片 6031/音频 3344 全收敛零失败，organize 9375 硬链接
+>   0 失败——收集器 12 轮从 605 磨到全收）**；
+>   **Bunny ✅ rc=0（8.8s，Unity 壳层 91 资产/90 图交付）——但真身是混血**：
+>   StreamingAssets 下 16 个 **LINK6 .arc（3.6GB，KAGUYA 家族）**，GARbro 能列
+>   voice/bgm/sed/scr（4445 语音+18 BGM+150 剧本），**cg0x.arc ×7 列不出**
+>   （疑加密变体）。候选规则已按 P2 流程落 `rules/candidates/link6-kaguya-arc-20261110.json`
+>   （**该家族用户 2026-10-26 划走过——解不解等用户发话**）。
+>   Unity 新队列 **9/9 全部跑完**（8 部全量闭环 + Bunny 壳层闭环）。
+>   Il2CppDumper 只在要 MonoBehaviour/自定义类型时才需要。
 >   **bugfix13（`dcf57fa`）**：Texture2D 缺口绝对阈值随类型规模自适应
 >   `max(20, 类型数×1%)`（MiraisMidnight 3513 张图缺口 28=0.8% 是引用型家族
 >   正常规模，固定 20 拦死正常大游戏；比例闸门 2% 不变）。tests=863 / 0 / 0。
