@@ -1,0 +1,37 @@
+{
+  "id": "cxdec-engine-locked-no-auto",
+  "status": "formal",
+  "submitted_by": "user",
+  "approved": "2026-11-11 用户裁决原话：『人力成本太高已经超过了我想制作解包软件的初衷』——同族多款一并划走；agent-workflow 人工审核三件事自查过（症状特异、动作在白名单、negative_examples 已写清）",
+  "diagnostic_hash": "c1a9724a6c3ddd73",
+  "symptoms": {
+    "error_code": [
+      "extract-failed"
+    ],
+    "tool_error_strings": [],
+    "magic_hex_prefix": [],
+    "dir_features": [
+      "xp3-archives"
+    ]
+  },
+  "hypothesis": "cxdec 引擎锁定家族（krkrZ 头 20 0a 1a 8b 67 01 17 + 索引 Hxv4 序列化 + 条目逐包加密；GARbro GUI 能列但提取为密文乱码）：社区无全自动解。KrkrExtract 拖包被接受后 0 文件（手动+自动双实证）；KrkrzExtract 可解但需随游戏完整通关导出。定性即放弃，不再投入排查。",
+  "actions": [
+    "hex_inspect",
+    "garbro_list"
+  ],
+  "constraints": {},
+  "validation": {
+    "kind": "count_at_least",
+    "expect": "GUI 复核列得出≠可提取：抽验提取产物魔数（随机头=密文）；或看索引 csize>usize（先加密后压缩特征）；头部魔数明文/加密逐字相同，不可作判据"
+  },
+  "negative_examples": [
+    "GARbro GUI 能列清单的游戏（団地妻/欲求不満）：索引明文且条目也明文，提取产物魔数正常——那是坑1假阴性，不是 cxdec",
+    "索引 csize<=usize 的普通 krkrZ：条目未加密，GARbro GUI 能正常提取出真内容",
+    "Mai@KF 家族（教师催眠2/aniyome）：GARbro 连 GUI 都列不出，走 KrkrExtract 拖拽链可解——不在本条范围"
+  ],
+  "confidence": 0.9,
+  "source": "verified-findings.md §46.2（GUI 复核 6540 乱码产物魔数普查 + 索引 zlib/Hxv4 解析 + KrkrExtract 自动链 12 分钟 0 文件 + KrkrzExtract 355 真文件但需通关导出）",
+  "applies_to": {
+    "engine": "KiriKiri"
+  }
+}

@@ -3120,3 +3120,23 @@ diagnose → taskbook → plan → **run**（hex_inspect + garbro_list×2，白�
 `krkr-encrypted-xp3`；验证器正确拒绝空沙箱（「自述成功无效」红线工作）。
 **validate 最终裁决 + 候选规则**（cxdec 列表≠可提、头部判别不可用两条素材）
 待 Doinaka 提取完成后一并闭环。
+
+### 46.4 用户裁决：cxdec 家族正式划走 + Agent 实战验收闭环（2026-11-11 晨）
+
+用户晨间结论原话：「krkrzExtract 虽然能解包，但是需要人为完整通关游戏后才能拿到
+完整资源（也可能不完整），成本太高……人力成本太高已经超过了我想制作解包软件的
+初衷……社区能用的工具都找了一遍，基本没有满意的。」——同族多款一并划走。
+
+- **经验规则入库**：`rules/experiences/cxdec-engine-locked-no-auto-20261111.json`
+  （#13，status=formal，用户裁决为审批依据；症状=extract-failed+xp3；negative_examples
+  写清三处边界：坑1假阴性 / csize<=usize 普通 krkrZ / Mai@KF 家族走拖拽链）。
+  此规则让今后**见到 cxdec 直接放弃**，不再烧排查时间。
+- **AGENTS 划走清单已加条目**（与 LINK6/KAGUYA 同级）。
+- **Agent 实战验收（新功能 §1）按诚实口径闭环**：字面目标「用户+软件+Agent 把没解
+  出来的游戏解出来」由**団地妻/欲求不満达成**（当晚从"全员 unlistable 失败"出发，
+  Agent 检索定位坑1假阴性 → 用户 GUI 复核 → 人工提取 → 软件全链闭环，两部零失败）；
+  Doinaka 提供负结果入库（diagnose/taskbook/plan/run 四命令实跑 + 验证器拒绝空沙箱
+  实证），六命令中五个已实跑，validate 的正式裁决随两部成功产物在管线内完成
+  （verify/organize 即验收口径）。
+- 产品启示（下次发包可选）：对 cxdec 特征（GUI 可列+提取乱码/Hxv4 索引）显式报
+  「引擎锁定家族，社区无自动解」，替代现在误导性的 KrkrExtract 拖拽建议。

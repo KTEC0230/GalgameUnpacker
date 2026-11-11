@@ -166,6 +166,7 @@
 | 11-11 | **aniyome 人工拖拽闭环**（手势定案：先拖 exe→提取 UI→Full Unpack→逐包拖；落点意外 + 三方对账一致）| VF §44 |
 | 11-11 | 清理落地（8G→286K，「只留有用数据」铁律）+ **ACE 谜案收官**（第三条 Low 标签=真牙齿；写入者=深信服残留 Guarder）| VF §44.4 / §45 |
 | 11-11 凌晨 | **泛化 2/3 闭环**（団地妻 2100 / 欲求不満 3690 零失败）+ **Doinaka=cxdec 定性**（GUI 能列≠能提；头部判别不可用；KrkrExtract 死路双实证；KrkrzExtract 是唯一出路）| VF §46 |
+| 11-11 晨 | **cxdec 家族正式划走**（用户裁决：通关导出人力成本超初衷；经验规则 `cxdec-engine-locked-no-auto` 入库 #13）+ **Agent 实战验收闭环**（新功能 §1 以団地妻/欲求不満协作解出达成）| VF §46.4 / rules/experiences |
 
 ## 引擎分支速查（实测要点；细节见 verified-findings 对应 §）
 
@@ -191,8 +192,10 @@
 - 判定基线：`_fixtures/` 8 个（可重建，含 rpgmaker/advhd 补位）+ 12 真实样本（缺失即跳过），
   与 `tests/golden_detect.json` 逐字锁定——`python tests/make_golden.py --check` 应零漂移。
 - **划走（用户明确不做，别再提）**：pf8/.pfs 家族 ×8、KAGUYA「LINK」.arc ×3（Bunny 的
-  LINK6 同族，2026-11-10 复核维持）、夏への方舟 ×3、NekoSDK、夕凪荘 22 BGM 内存 dump、
-  GUI 弹窗确认、安装器；出圈外：nier/nikke2/Miside/EnderLilies/EnderMagnolia。
+  LINK6 同族，2026-11-10 复核维持）、**cxdec 引擎锁定家族（Doinaka 等 ×N，2026-11-11
+  用户定：随通关导出的人力成本超软件初衷，见 rules/experiences/cxdec-*）**、
+  夏への方舟 ×3、NekoSDK、夕凪荘 22 BGM 内存 dump、GUI 弹窗确认、安装器；
+  出圈外：nier/nikke2/Miside/EnderLilies/EnderMagnolia。
 
 ## 归档与验收纪律（跨样本沉淀）
 
@@ -207,12 +210,11 @@
 
 ## 📋 待办（2026-11-11）
 
-1. **Doinaka 收尾**：cxdec 定性完毕（VF §46.2），**白天用户按操作单用 KrkrzExtract 重跑**
-   （`D:\GalgameOutput\Doinaka Kyoudai\_work\manual-krkrz.md`）→ 我收货 + `--reuse-raw
-   --organize` + Agent 验收后半（validate + 候选规则）。**注意：GARbro/KrkrExtract 都解不了
-   它，只有 KrkrzExtract 行。**
-2. **不要加暗色模式**（2026-11-06 用户明确）；**LINK6/KAGUYA 家族不做**（2026-11-10 复核）。
-3. GitHub 恢复后再 push（账号封禁中，别反复试）。
+1. **不要加暗色模式**（2026-11-06 用户明确）；**LINK6/KAGUYA 家族不做**（2026-11-10 复核）；
+   **cxdec 引擎锁定家族不做**（2026-11-11 用户定：通关导出成本超限，经验规则已入库）。
+2. GitHub 恢复后再 push（账号封禁中，别反复试）。
+3. manual.log 模板两处欠准随下次发包一并修（VF §44.1：缺「先拖游戏 exe」步骤、
+   重跑命令缺 `--organize`）。
 4. manual.log 模板两处欠准随下次发包一并修（VF §44.1：缺「先拖游戏 exe」步骤、
    重跑命令缺 `--organize`）。
 
