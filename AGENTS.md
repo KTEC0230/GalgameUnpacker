@@ -20,14 +20,17 @@
 >
 > **📦 交付形态（2026-11-04 用户定：只做便携版，安装器已删）**：
 > `python build_exe.py --tag <名>` = 冻结 + 出 `packaging/Output/GalgameUnpacker-<版本>-<名>-portable.zip`；
-> **当前交付 `bugfix13`**（2026-11-11，142.0 MiB，SHA256 `e0719391…cd43ec`），
-> **标准路径 `D:\GalgameUnpacker\orchestrator` 已部署**。同名 zip 拒绝覆盖。
+> **当前交付 `v1.0.0` 正式版**（2026-11-12，141.0 MiB，SHA256 `6f57768a…d70469`，
+> cxdec 诚实报告 + 拖拽手势模板修正 + 子目录包并集，VF §47），
+> **标准路径 `D:\GalgameUnpacker\orchestrator` 已部署**（旧版在 `orchestrator_prev_bugfix13`）。
+> 同名 zip 拒绝覆盖。
 
-## 📌 当前状态（2026-11-11）
+## 📌 当前状态（2026-11-12）
 
-- **基线**：`tests=909 / 0 failures / 0 errors`（skip 16~20 随环境波动）+ golden 8 fixture +
-  12 真实样本零漂移。**源码 22 个本地提交**（HEAD 附近：`f128216` 数据现场、`36260ec` 交付、
-  `ac463e8` Agent P2），工作树只余用户自己的 `新功能.md`（Agent 能力的需求出处，勿动勿加）。
+- **基线**：`tests=918 / 0 failures / 0 errors`（skip 16~20 随环境波动）+ golden 8 fixture +
+  12 真实样本零漂移。**源码 24 个本地提交**（HEAD 附近：`e9d9f53` v1.0.0 发布、
+  `9c7b8e8` cxdec 划走、`ba765ec` 泛化 2/3），工作树只余用户自己的 `新功能.md`
+  （Agent 能力的需求出处，勿动勿加）与用户删除的 `vn-unpacker-verification.md`（用户改动，勿动）。
 - **能力面**：10 条引擎链路（Ren'Py / KiriKiri / RPG Maker / Yu-Ris / AdvHD / ExHIBIT /
   CatSystem2 / Unity / Artemis / Tyrano 判得出无链路 rc=2）；加密 KiriKiri 走 `--allow-gui`
   或人工拖 + `--reuse-raw`；Agent 攻坚六命令（`--agent-diagnose/plan/run/validate/taskbook/candidate`）。
@@ -167,6 +170,7 @@
 | 11-11 | 清理落地（8G→286K，「只留有用数据」铁律）+ **ACE 谜案收官**（第三条 Low 标签=真牙齿；写入者=深信服残留 Guarder）| VF §44.4 / §45 |
 | 11-11 凌晨 | **泛化 2/3 闭环**（団地妻 2100 / 欲求不満 3690 零失败）+ **Doinaka=cxdec 定性**（GUI 能列≠能提；头部判别不可用；KrkrExtract 死路双实证；KrkrzExtract 是唯一出路）| VF §46 |
 | 11-11 晨 | **cxdec 家族正式划走**（用户裁决：通关导出人力成本超初衷；经验规则 `cxdec-engine-locked-no-auto` 入库 #13）+ **Agent 实战验收闭环**（新功能 §1 以団地妻/欲求不満协作解出达成）| VF §46.4 / rules/experiences |
+| 11-12 | **🚀 v1.0.0 正式版发布**（三项修复带进正式版：cxdec 诚实报告 / 拖拽手势模板 / 子目录包并集；tests 918 全绿；141.0 MiB 校验全过；标准路径已部署，旧版保留）| VF §47 |
 
 ## 引擎分支速查（实测要点；细节见 verified-findings 对应 §）
 
