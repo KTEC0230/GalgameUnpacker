@@ -416,16 +416,66 @@ def test_renpy_archives_empty(tmp_path):
     assert orch._renpy_archives(tmp_path) == []
 
 
-def test_kirikiri_xp3_prefers_top_level(tmp_path):
+def test_kirikiri_xp3_merges_first_level_subdirs(tmp_path):
+    """VF §46.1：顶层有包也要看一级子目录（団地妻 arc/ 布局，8 包媒体曾全漏）。"""
     _write(tmp_path / "data.xp3")
-    _write(tmp_path / "sub" / "movie.xp3")
-    assert [p.name for p in orch._kirikiri_xp3(tmp_path)] == ["data.xp3"]
+    _write(tmp_path / "arc" / "voice.xp3")
+    _write(tmp_path / "arc" / "bgm.xp3")
+    assert sorted(p.name for p in orch._kirikiri_xp3(tmp_path)) == \
+        ["bgm.xp3", "data.xp3", "voice.xp3"]
+
+
+def test_kirikiri_xp3_no_subdirs_unchanged(tmp_path):
+    _write(tmp_path / "data.xp3")
+    _write(tmp_path / "movie.xp3")
+    assert sorted(p.name for p in orch._kirikiri_xp3(tmp_path)) == ["data.xp3", "movie.xp3"]
 
 
 def test_kirikiri_xp3_recursive_fallback(tmp_path):
     _write(tmp_path / "a" / "data.xp3")
     _write(tmp_path / "a" / "movie.xp3")
     assert sorted(p.name for p in orch._kirikiri_xp3(tmp_path)) == ["data.xp3", "movie.xp3"]
+
+
+def test_kirikiri_xp3_deep_fallback_when_no_shallow_hits(tmp_path):
+    """一级子目录也没有时，深递归兜底保留（旧口径不回退）。"""
+    _write(tmp_path / "a" / "b" / "deep.xp3")
+    assert [p.name for p in orch._kirikiri_xp3(tmp_path)] == ["deep.xp3"]
+
+
+def test_probe_cxdec_detects_hxv4_index(tmp_path):
+    """VF §46.2：Hxv4 序列化索引 = cxdec 家族命中。手工构造最小样本。"""
+    import struct as _s
+    import zlib as _z
+    idx = b"Hxv4" + b"\x00" * 64                       # 解压后以 Hxv4 开头
+    blob = b"\x01" + _s.pack("<Q", len(idx)) + _s.pack("<Q", len(idx)) + _z.compress(idx)
+    head = bytearray(0x30)
+    head[:4] = b"XP3\x0d"
+    _s.pack_into("<Q", head, 0x20, len(head))          # 索引紧跟头部（实测布局）
+    p = tmp_path / "data.xp3"
+    p.write_bytes(bytes(head) + blob)
+    assert orch._probe_cxdec(tmp_path) is True
+
+
+def test_probe_cxdec_plain_xp3_is_negative(tmp_path):
+    """普通 xp3（明文索引、无 Hxv4）绝不误报。"""
+    import struct as _s
+    import zlib as _z
+    idx = b"T\x00\x00\x00" + b"\x00" * 32              # 标准 chunk 表开头
+    blob = b"\x01" + _s.pack("<Q", len(idx)) + _s.pack("<Q", len(idx)) + _z.compress(idx)
+    head = bytearray(0x30)
+    head[:4] = b"XP3\x0d"
+    _s.pack_into("<Q", head, 0x20, len(head))
+    p = tmp_path / "data.xp3"
+    p.write_bytes(bytes(head) + blob)
+    assert orch._probe_cxdec(tmp_path) is False
+
+
+def test_probe_cxdec_broken_file_never_raises(tmp_path):
+    """探针绝不抛：读不动/魔数不对/索引残缺 → False（失败=维持旧建议）。"""
+    _write(tmp_path / "garbage.xp3")                   # _write 造的是小文件
+    (tmp_path / "x.xp3").write_bytes(b"XP3\x0d" + b"\x00" * 4)  # < 0x30
+    assert orch._probe_cxdec(tmp_path) is False
 
 
 # ---------------------------------------------------------------------------

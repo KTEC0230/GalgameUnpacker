@@ -3140,3 +3140,40 @@ diagnose → taskbook → plan → **run**（hex_inspect + garbro_list×2，白�
   （verify/organize 即验收口径）。
 - 产品启示（下次发包可选）：对 cxdec 特征（GUI 可列+提取乱码/Hxv4 索引）显式报
   「引擎锁定家族，社区无自动解」，替代现在误导性的 KrkrExtract 拖拽建议。
+
+## 47. v1.0.0 正式版发布（2026-11-12，首个 1.0）
+
+用户令：「回头复查检验一下，要是没问题就封装软件给我测试吧，版本1.0.0」。
+
+### 47.1 带进正式版的三项修复（本周期沉淀，全部有测试钉住）
+
+1. **人工拖拽手势模板修正**（VF §44.1/44.2 的欠准账）：加密分支步骤改为
+   「先拖游戏 exe（主窗口只收 exe）→ 提取 UI 出现后勾 Full Unpack → xp3 逐包拖、
+   弹窗不点 → KrkrExtract_Output 落点会飘，按产物实测找」；续跑命令补 `--organize`
+   （缺它就没有类目清单，§44.3 的补跑教训）。
+2. **cxdec 诚实报告**（§46.4 产品启示落地）：新增 `_probe_cxdec`（xp3 头 0x20 索引
+   偏移 → zlib 解出 `Hxv4` 才算命中，探针绝不抛、失败=维持旧建议）；命中后人工方案
+   换「引擎锁定家族」口径（放弃建议 + KrkrzExtract 通关导出 + 社区密钥展望），
+   **不再给 KrkrExtract 拖拽死路建议、不拼 case_hint**（那是对这一族的自相矛盾）。
+   dry-run 同口径（预判文本不再盖掉诚实 summary）。
+3. **`_kirikiri_xp3` 顶层+一级子目录并集**（§46.1 団地妻 arc/ 缺口）：旧「顶层优先、
+   没有才深递归」漏一级子目录媒体包；新口径全空才深递归兜底。AdvHD 枚举注释同步。
+
+### 47.2 版本与构建
+
+- `version.py` APP_VERSION 0.8.2 → **1.0.0**；README 版本行/包名/主线描述同步
+  （docs 契约测试钉住）。测试净增 9 条（cxdec 探针×3、manual cxdec 口径×4、
+  枚举并集×2 改造），**基线 tests=918 / 0 fail / 0 err + golden 零漂移**。
+- 构建 `build_exe.py`（无 tag）→ `GalgameUnpacker-1.0.0-portable.zip`
+  **141.0 MiB，SHA256 `6f57768a…d70469`**，1537 条目 testzip 零损坏；
+  zip exe == dist exe（`0511f41f…`）；zip README == 仓库 README。
+- `[SKIP] krkrz`：用户已删除 `D:\K\galgame\krkr\krkrz`（划走家族的工具），
+  DATA_FILES 条目保留（工具回来即自动随包）。
+
+### 47.3 校验与部署（全过）
+
+`--doctor` rc=0（标准路径 High 完整性、全位置可写）；`--gui-smoke` rc=0；
+冻结 exe dry-run 双回归：**Doinaka = cxdec 诚实文本**（新逻辑确认在包内）、
+**aniyome = 拖拽建议 + 新手势模板**（判别器不误报 + 模板修正确认在包内）。
+部署：旧版改名 `orchestrator_prev_bugfix13` 保留，新版解压回
+`D:\GalgameUnpacker\orchestrator`（标准路径）。交付用户测试。

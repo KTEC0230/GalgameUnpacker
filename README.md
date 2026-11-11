@@ -3,14 +3,16 @@
 个人自用/学习项目：**自动解包 galgame，产出图片、音频、视频三类资源**。
 不做打包回写、文本提取、翻译、对外分发。仅用于个人已购游戏的资源提取与学习。
 
-当前版本 **v0.8.2**（Windows 10/11 x64，Python 3.14 + PyInstaller onedir，便携 zip）。
-近期三条主线：v0.8 界面重做 + 跟随系统缩放；v0.7 产物按类型归档 / 环境自检；v0.6 输出目录自动降级。
+当前版本 **v1.0.0**（Windows 10/11 x64，Python 3.14 + PyInstaller onedir，便携 zip）。
+首个正式版：16 部真实游戏全链闭环验证；v1.0 新增 cxdec 引擎锁定家族的诚实报告
+（不再给无效的拖拽建议）、KiriKiri 一级子目录包合并（arc/ 布局）、人工拖拽手势
+模板按实测修正（先拖游戏 exe → 勾 Full Unpack → 逐包拖）。
 
 ## 安装
 
 **只提供便携版**（不做安装器：只换来「卸载键 + 快捷方式」，却会撞安全软件对写入的拦截）。
 
-- 解压 `GalgameUnpacker-0.8.2-portable.zip` 到任意**普通目录**，双击
+- 解压 `GalgameUnpacker-1.0.0-portable.zip` 到任意**普通目录**，双击
   `orchestrator\orchestrator.exe`（不带参数即进 GUI）
 - 不写注册表、不需要管理员权限、卸载 = 删目录
 

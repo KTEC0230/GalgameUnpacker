@@ -704,10 +704,65 @@ def stage_extract_renpy(ctx: Ctx) -> Stage:
 
 
 def _kirikiri_xp3(game_dir: Path) -> list[Path]:
-    top = sorted(p for p in game_dir.glob("*.xp3") if p.is_file())
-    if top:
-        return top
+    """顶层 `*.xp3` + **一级子目录** `*.xp3` 的并集（VF §46.1）。
+
+    旧口径「顶层优先、顶层没有才深递归」漏掉団地妻的 `arc/` 布局：顶层 data.xp3
+    存在时，arc/ 里 8 包媒体全部不可见。一级子目录够覆盖该类布局且不会深到
+    savedata/plugins 噪音；全空才退回深递归（旧 fallback 保留）。
+    """
+    tops = sorted(p for p in game_dir.glob("*.xp3") if p.is_file())
+    subs: list[Path] = []
+    try:
+        for sub in sorted(p for p in game_dir.iterdir() if p.is_dir()):
+            subs.extend(p for p in sorted(sub.glob("*.xp3")) if p.is_file())
+    except OSError:
+        pass
+    merged = tops + subs
+    if merged:
+        return sorted(merged, key=lambda p: str(p).casefold())
     return sorted(p for p in game_dir.rglob("*.xp3") if p.is_file())
+
+
+def _probe_cxdec(game_dir: Path) -> bool:
+    """cxdec 引擎锁定家族探针（VF §46.2）：xp3 头 0x20 的索引偏移 → zlib 解出
+    `Hxv4` 序列化（cxdec 家族标记；csize>usize 是「先加密后压缩」的伴生特征）。
+
+    只有**确定性命中**（zlib 成功且 Hxv4 头在场）才返回 True；读不动/没命中
+    一律 False——探针失败绝不改变行为。命中后人工方案换「引擎锁定家族」诚实
+    口径（manual.py cxdec 分支），不再给 KrkrExtract 拖拽死路建议。
+    """
+    import struct as _struct
+    import zlib as _zlib
+    candidates: list[Path] = []
+    try:
+        candidates.extend(p for p in sorted(game_dir.glob("*.xp3")) if p.is_file())
+        for sub in sorted(p for p in game_dir.iterdir() if p.is_dir()):
+            candidates.extend(p for p in sorted(sub.glob("*.xp3")) if p.is_file())
+    except OSError:
+        return False
+    for xp3 in candidates[:3]:
+        try:
+            size = xp3.stat().st_size
+            if size < 0x30:
+                continue
+            with xp3.open("rb") as fh:
+                head = fh.read(40)
+                if head[:4] != b"XP3\x0d":
+                    continue
+                ioff = _struct.unpack_from("<Q", head, 0x20)[0]
+                if not (0 < ioff < size - 17):
+                    continue
+                fh.seek(ioff)
+                blob = fh.read(min(size - ioff, 1 << 22))
+            if len(blob) < 18 or blob[0] != 1:
+                continue
+            csize = _struct.unpack_from("<Q", blob, 9)[0]
+            raw = _zlib.decompress(blob[17:17 + min(csize, len(blob) - 17)])
+            if raw[:4] == b"Hxv4":
+                return True
+        except Exception:  # noqa: BLE001 —— 探针绝不抛：失败=维持旧建议
+            continue
+    return False
 
 
 def _case_krkr_hint(case_match: dict | None) -> str:
@@ -1083,7 +1138,8 @@ def stage_extract_yuris(ctx: Ctx) -> Stage:
 # ---------------------------------------------------------------- AdvHD
 
 def _advhd_arcs(game_dir: Path) -> list[Path]:
-    """顶层 `*.arc` 优先，顶层没有才递归（与 `_kirikiri_xp3` 同一策略）。"""
+    """顶层 `*.arc` 优先，顶层没有才递归（AdvHD 自身策略；KiriKiri 侧已改为
+    顶层+一级子目录并集，见 `_kirikiri_xp3` 与 VF §46.1——两者不再同策略）。"""
     top = sorted(p for p in game_dir.glob("*.arc") if p.is_file())
     if top:
         return top
@@ -2746,7 +2802,9 @@ def _finish_failure(ctx: Ctx, stages: list[Stage], engine: str | None,
                            case_hint=_case_krkr_hint(ctx.case_match),
                            allow_gui=ctx.allow_gui,
                            backup_dir=ctx.overwrite_backup,
-                           diagnostic={"path": str(diag_path)} if diag_path else None)
+                           diagnostic={"path": str(diag_path)} if diag_path else None,
+                           cxdec=(engine == "KiriKiri" and error == "extract-failed"
+                                  and _probe_cxdec(ctx.game_dir)))
     if plan is not None:
         man["manual"] = plan.as_dict()
         # 终端区块 GUI 用户看不到（worker 的 stdout 不进日志面板），
@@ -3114,6 +3172,7 @@ def main(argv: list[str] | None = None) -> int:
             # 代价是 dry-run 对 KiriKiri 样本多几秒（一次 garbro -l），值得。
             engine = st.data.get("engine")
             probe: tuple[bool, str] | None = None
+            cxdec_hit = False
             if engine == "KiriKiri":
                 xp3s = _kirikiri_xp3(ctx.game_dir)
                 if xp3s:
@@ -3122,11 +3181,14 @@ def main(argv: list[str] | None = None) -> int:
                     ok_list, _n, _out = tb.garbro_list(biggest)
                     probe = (ok_list, biggest.name)
                     payload["auto_feasible"] = ok_list
+                    if not ok_list:
+                        cxdec_hit = _probe_cxdec(ctx.game_dir)
             plan = manual.dry_run_plan(engine, game_dir=ctx.game_dir, out_dir=ctx.out_dir,
                                        raw_dir=ctx.raw_dir, png_dir=ctx.png_dir,
                                        xp3_probe=probe, prog=_prog_name(),
                                        tools=_manual_tools(),
-                                       case_hint=_case_krkr_hint(st_case.data))
+                                       case_hint=_case_krkr_hint(st_case.data),
+                                       cxdec=cxdec_hit)
             if plan is not None:
                 payload["manual"] = plan.as_dict()
         print(json.dumps(payload, ensure_ascii=False, indent=2))

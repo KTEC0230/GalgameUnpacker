@@ -105,12 +105,17 @@ def _plan_for_core(error: str, *, engine: str | None, game_dir: Path, out_dir: P
                    stages: list[dict] | None = None,
                    case_hint: str | None = None,
                    allow_gui: bool = False,
-                   backup_dir: Path | str | None = None) -> ManualPlan | None:
+                   backup_dir: Path | str | None = None,
+                   cxdec: bool = False) -> ManualPlan | None:
     """按失败码给一份人工方案；没有合适方案返回 None（不要硬凑）。
 
     `diagnostic`：诊断包（diagnostics.build 的产物，P0）——里面的 `path` 会作为
     needs 第一条挂进方案（「整段交给 Agent 即可开工」）。None 时行为与旧版
     完全一致（test_manual 12 条的契约不动）。
+
+    `cxdec`：orchestrator 侧探针的命中（_probe_cxdec，VF §46.2）。命中 = 换
+    「引擎锁定家族」诚实口径（社区无全自动解），不再给 KrkrExtract 拖拽步骤——
+    那条对这一家族是实证死路（拖包被接受后 0 文件）。
 
     `case_hint`：案例库证据提示（P1-① A 案，2026-11-05 用户定）——
     同签名案例曾用 krkr_auto_extract 全自动成功时，把「加 --allow-gui 可自动跑」
@@ -124,7 +129,8 @@ def _plan_for_core(error: str, *, engine: str | None, game_dir: Path, out_dir: P
     `backup_dir`：`--overwrite` 把上一轮产物改名备份到的目录，写进方案让用户找得回。
     """
     tools = tools or {}
-    resume = f"{prog} {_q(game_dir)} --out {_q(out_dir)} --reuse-raw {_q(raw_dir)}"
+    resume = (f"{prog} {_q(game_dir)} --out {_q(out_dir)} --reuse-raw {_q(raw_dir)}"
+              f" --organize")
 
     if engine == "KiriKiri" and error in ("extract-failed", "preflight-failed"):
         detail = _stage_detail(stages, "extract")
@@ -203,7 +209,37 @@ def _plan_for_core(error: str, *, engine: str | None, game_dir: Path, out_dir: P
                 then=resume, alternatives=alternatives,
             )
 
-        # 没试过 GUI 链路：结论才是「列不出目录，需要人工或加 --allow-gui」。
+        # 没试过 GUI 链路。cxdec 命中（orchestrator 侧探针，VF §46.2）→ 诚实口径：
+        # 这一家族社区无全自动解，KrkrExtract 拖拽建议是实证死路（0 文件）。
+        if cxdec and not gui_failed:
+            # 注意：不拼 case_hint——命中案例走的是 KrkrExtract 拖拽链（Mai@KF 族），
+            # 对 cxdec 恰恰是实证死路，把「加 --allow-gui 可自动走」摆这里等于自相矛盾。
+            summary = ("这个游戏是 cxdec 引擎锁定家族：索引能读但条目数据逐包加密，"
+                       "社区没有全自动解。")
+            needs = []
+            if backup_note:
+                needs.insert(0, backup_note)
+            return ManualPlan(
+                code=code,
+                summary=summary,
+                why=("实测（VF §46）：GARbro 能列清单但提取出来全是密文乱码"
+                     "（GUI 能列≠能提取）；KrkrExtract 拖包被接受后静默 0 文件"
+                     "（手动+自动双实证）；KrkrzExtract 能解但要随游戏完整通关导出，"
+                     "人力成本超出本工具定位（2026-11-11 用户裁决划走，"
+                     "经验规则 cxdec-engine-locked-no-auto）。"),
+                needs=tuple(needs),
+                steps=[
+                    "此家族当前建议放弃：解包需要完整通关游戏让引擎自己解密，"
+                    "成本远超工具定位",
+                    "若仍想要资源：一边玩通关一边用 KrkrzExtract 注入游戏导出"
+                    "（做法与坑见 verified-findings §46 的 Doinaka 案例）",
+                    "若日后出现该游戏的社区专用密钥/补丁，GARbro 即可解——"
+                    "可以隔段时间再查一次",
+                ],
+                target=str(raw_dir),
+                then=resume,
+                alternatives=[],
+            )
         why = ("GARbro 的 Console 版没有「指定游戏标题/密钥」的参数；"
                "KrkrExtract 的自动化要模拟鼠标拖拽，慢且挑环境。")
         summary = "这个游戏的 xp3 自动解不开：GARbro 列不出目录（大概率加密/受保护）。"
@@ -219,11 +255,16 @@ def _plan_for_core(error: str, *, engine: str | None, game_dir: Path, out_dir: P
             needs=tuple(needs),
             steps=[
                 f"打开 {krkr}",
-                "把游戏目录下的所有 .xp3 拖进 KrkrExtract 窗口（先拖 data.xp3），"
-                "等界面状态回到 idle（有进度条就走完）",
-                "解出来的东西在 KrkrExtract 目录下的 KrkrExtract_Output\\data 与 ...\\png",
-                f"把 data\\ 里的全部内容拷到：{raw_dir}",
-                f"如果 ...\\png 里有东西，一并拷到：{png_dir}",
+                "把**游戏主程序**（游戏目录里的 .exe）拖进 KrkrExtract 窗口——"
+                "主窗口只认 exe，直接拖 .xp3 没有反应（2026-11-11 实测坑，VF §44.1）",
+                "游戏被拉起后会出现 KrkrExtract 的提取小窗口：在它上面勾选 "
+                "**Full Unpack**（不勾就只解脚本，一张图都不会有，§32.5）",
+                "把游戏目录下的所有 .xp3 **逐个**拖进 KrkrExtract 提取小窗口"
+                "（从小到大），等进度条走完再拖下一个；弹出的对话框一律**不点**"
+                "（点了游戏退出=提取中止）",
+                "解出来的东西在 KrkrExtract_Output\\ 下（每包一个同名子目录）；"
+                "落点位置有时会飘——按产物实测找，别只认 KrkrExtract 目录旁（VF §44.2）",
+                f"把 KrkrExtract_Output\\ 里全部内容拷到：{raw_dir}",
             ],
             target=str(raw_dir),
             then=resume,
@@ -316,12 +357,13 @@ def plan_for(error: str, *, engine: str | None, game_dir: Path, out_dir: Path,
              case_hint: str | None = None,
              allow_gui: bool = False,
              backup_dir: Path | str | None = None,
-             diagnostic: Mapping | None = None) -> ManualPlan | None:
+             diagnostic: Mapping | None = None,
+             cxdec: bool = False) -> ManualPlan | None:
     """plan_for 的对外入口：核心分派（_plan_for_core）+ 诊断包挂钩。"""
     plan = _plan_for_core(error, engine=engine, game_dir=game_dir, out_dir=out_dir,
                           raw_dir=raw_dir, png_dir=png_dir, prog=prog, tools=tools,
                           stages=stages, case_hint=case_hint, allow_gui=allow_gui,
-                          backup_dir=backup_dir)
+                          backup_dir=backup_dir, cxdec=cxdec)
     return _with_diagnostic(plan, diagnostic)
 
 
@@ -362,21 +404,28 @@ def dry_run_plan(engine: str | None, *, game_dir: Path, out_dir: Path,
                  tools: Mapping[str, str] | None = None,
                  case_hint: str | None = None,
                  allow_gui: bool = False,
-                 backup_dir: Path | str | None = None) -> ManualPlan | None:
+                 backup_dir: Path | str | None = None,
+                 cxdec: bool = False) -> ManualPlan | None:
     """`--dry-run` 的提前预判：**别让用户跑完 40 分钟才发现要人工**。
 
     `xp3_probe` = (能否列出, 最大 xp3 的名字)；None 表示没探（非 KiriKiri）。
+    `cxdec`：orchestrator 侧探针命中（VF §46.2）→ 诚实口径（引擎锁定家族）。
     """
     if engine == "KiriKiri" and xp3_probe is not None and not xp3_probe[0]:
         plan = plan_for("extract-failed", engine=engine, game_dir=game_dir,
                         out_dir=out_dir, raw_dir=raw_dir, png_dir=png_dir,
                         prog=prog, tools=tools, stages=[], case_hint=case_hint,
-                        allow_gui=allow_gui, backup_dir=backup_dir)
+                        allow_gui=allow_gui, backup_dir=backup_dir, cxdec=cxdec)
         if plan is None:
             return None
-        summary = f"预判：{xp3_probe[1]} 用 GARbro 列不出目录，正式跑大概率要人工介入。"
-        if case_hint:
-            summary = f"{summary} {case_hint}"
+        if cxdec:
+            # cxdec 命中：底层方案就是诚实口径，别用「要人工介入」的预判文本盖掉它；
+            # case_hint（拖拽链证据）也不拼——对这一族是死路建议（见 _plan_for_core）。
+            summary = f"预判：{plan.summary}"
+        else:
+            summary = f"预判：{xp3_probe[1]} 用 GARbro 列不出目录，正式跑大概率要人工介入。"
+            if case_hint:
+                summary = f"{summary} {case_hint}"
         return ManualPlan(
             code=plan.code,
             summary=summary,

@@ -167,6 +167,47 @@ def test_case_hint_lands_in_summary_not_why():
     assert _HINT in plan.render(), "CLI 区块也要显示"
 
 
+# ---------------------------------------------------------------------------
+# cxdec 引擎锁定家族：诚实口径（VF §46，2026-11-11 用户裁决划走）
+# ---------------------------------------------------------------------------
+
+def test_cxdec_hit_switches_to_honest_plan():
+    """探针命中 = 不再给 KrkrExtract 拖拽死路建议，改为「引擎锁定家族」口径。"""
+    plan = _plan("extract-failed", cxdec=True)
+    assert plan.code == manual.CODE_KIRIKIRI_ENCRYPTED
+    assert "cxdec 引擎锁定家族" in plan.summary
+    assert "建议放弃" in " ".join(plan.steps)
+    assert "KrkrzExtract" in plan.why and "完整通关" in plan.why
+    # 死路建议绝不能再出现：既不在步骤里，也不在备选里
+    assert not any("--allow-gui" in a for a in plan.alternatives)
+    assert plan.then and "--reuse-raw" in plan.then and "--organize" in plan.then
+
+
+def test_cxdec_hit_suppresses_dead_end_hint():
+    """case_hint 推荐的是 KrkrExtract 拖拽链——对 cxdec 是实证死路，必须不出现。"""
+    plan = _plan("extract-failed", cxdec=True, case_hint=_HINT)
+    assert _HINT not in plan.summary
+    assert "--allow-gui" not in plan.summary
+
+
+def test_cxdec_default_false_keeps_drag_advice():
+    """探针没命中（默认）→ 行为与旧版一致：仍有拖拽步骤与 --allow-gui 备选。"""
+    plan = _plan("extract-failed")
+    assert "cxdec 引擎锁定家族" not in plan.summary
+    assert any("拖进 KrkrExtract" in s for s in plan.steps)
+    assert any("--allow-gui" in a for a in plan.alternatives)
+
+
+def test_encrypted_steps_teach_exe_first_gesture():
+    """VF §44.1：旧模板漏「先拖游戏 exe」这步，照做会卡死；2026-11-11 起写明。"""
+    plan = _plan("extract-failed")
+    text = " ".join(plan.steps)
+    assert "游戏主程序" in text and ".exe" in text, "缺先拖 exe 这步"
+    assert "Full Unpack" in text, "缺勾模式这步（不勾只解脚本，§32.5）"
+    assert "逐个" in text, "缺逐包拖的手势"
+    assert "不点" in text, "缺弹窗红线（krkrZ 致命框点了=提取中止，§35.1）"
+
+
 def test_case_hint_not_applied_after_gui_already_failed():
     """GUI 自动化跑过但失败 = 这条链路在本机没走通，再推荐它就是误导。"""
     plan = _plan("extract-failed", case_hint=_HINT,
